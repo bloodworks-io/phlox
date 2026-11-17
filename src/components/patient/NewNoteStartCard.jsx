@@ -11,27 +11,16 @@ import {
     Text,
     VStack,
 } from "@chakra-ui/react";
-import { FaUserPlus, FaSearch, FaArrowLeft } from "react-icons/fa";
+import { LuArrowLeft, LuSearch, LuUserPlus } from "react-icons/lu";
 import { toaster } from "@/components/ui/toaster";
-import { useColorMode } from "../ui/color-mode";
-import { colors } from "../../theme/colors";
 import { DEFAULT_TOAST_CONFIG } from "../../utils/constants";
 import { formatDate } from "../../utils/helpers/formatHelpers";
 import UrSearchField from "./UrSearchField";
 
-export const PathHalf = ({
-    icon,
-    title,
-    subtitle,
-    accent,
-    tileBg,
-    onClick,
-}) => {
-    const { colorMode } = useColorMode();
-    const accentHex = colors[colorMode]?.[accent] ?? colors.dark.primaryButton;
-
+export const PathHalf = ({ icon, title, subtitle, onClick }) => {
     return (
         <Flex
+            className="entry-path"
             flex="1"
             direction="column"
             align="center"
@@ -40,20 +29,16 @@ export const PathHalf = ({
             py={10}
             px={4}
             cursor="pointer"
-            transition="transform 0.15s ease, background 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease"
-            bg={tileBg}
-            borderRadius="xl"
-            border="1px solid"
-            borderColor="surface"
+            transition="background-color 160ms ease, border-color 160ms ease, color 160ms ease"
             _hover={{
-                bg: "rgba(184, 192, 224, 0.12)",
-                borderColor: `${accentHex}66`,
-                transform: "translateY(-2px)",
-                boxShadow: "md",
-                "& .path-icon-tile": { transform: "scale(1.08)" },
+                backgroundColor: "folio.hover",
+                borderColor: "folio.accent",
             }}
-            _active={{ transform: "scale(0.98)" }}
-            _focusVisible={{ outline: "2px solid", outlineColor: "accent", outlineOffset: "2px" }}
+            _focusVisible={{
+                outline: "2px solid",
+                outlineColor: "folio.focus",
+                outlineOffset: "2px",
+            }}
             asChild
         >
             <button onClick={onClick}>
@@ -62,20 +47,19 @@ export const PathHalf = ({
                     align="center"
                     justify="center"
                     boxSize="56px"
-                    borderRadius="xl"
-                    bg={`${accentHex}1f`}
+                    borderRadius="folioPanel"
+                    bg="folio.accentSoft"
                     border="1px solid"
-                    borderColor={`${accentHex}40`}
+                    borderColor="folio.line"
                     mb={4}
                     mx="auto"
-                    transition="transform 0.2s"
                 >
-                    <Icon as={icon} boxSize={6} color={accent} />
+                    <Icon as={icon} boxSize={6} color="folio.accent" />
                 </Flex>
-                <Text fontWeight="600" color="textPrimary" fontSize="md">
+                <Text fontWeight="600" color="folio.ink" fontSize="md">
                     {title}
                 </Text>
-                <Text fontSize="xs" color="textSecondary" mt={1}>
+                <Text fontSize="xs" color="folio.muted" mt={1}>
                     {subtitle}
                 </Text>
             </button>
@@ -87,11 +71,6 @@ const candidateMeta = (cand, t) =>
     [cand.gender, cand.dob, cand.ur_number && t("patient.urBadge", { ur: cand.ur_number })]
         .filter(Boolean)
         .join("  ·  ");
-
-const startBtnSx = {
-    fontFamily: '"Space Grotesk", sans-serif',
-    fontWeight: "600",
-};
 
 export const CandidateRow = ({
     candidate,
@@ -107,34 +86,33 @@ export const CandidateRow = ({
 
     return (
         <Flex
+            className="entry-candidate-row"
             align="center"
             justify="space-between"
             p={3}
-            borderRadius="lg"
-            bg="tile"
         >
             <HStack gap={3} minW="0">
-                <Avatar.Root size="sm" bg="surface" color="textPrimary">
+                <Avatar.Root size="sm" bg="folio.paper" color="folio.ink">
                     <Avatar.Fallback name={fallbackName} />
                 </Avatar.Root>
                 <Box minW="0">
                     <Text
                         fontWeight="600"
-                        color="textPrimary"
+                        color="folio.ink"
                         lineClamp={1}
                     >
                         {candidate.name || t("patient.unnamedPatient")}
                     </Text>
                     <Text
                         fontSize="xs"
-                        color="textSecondary"
+                        color="folio.muted"
                         lineClamp={1}
                     >
                         {candidateMeta(candidate, t) ||
                             t("patient.noDemographicsOnFile")}
                     </Text>
                     {candidate.encounter_date && (
-                        <Text fontSize="xs" color="textSecondary">
+                        <Text fontSize="xs" color="folio.muted">
                             {t("patient.lastSeen", {
                                 date: formatDate(candidate.encounter_date),
                             })}
@@ -146,8 +124,7 @@ export const CandidateRow = ({
                 size="sm"
                 loading={confirming}
                 disabled={disabled}
-                className="green-button"
-                css={startBtnSx}
+                variant="folioPrimary"
                 onClick={() => onConfirm(candidate)}
             >
                 {t("patient.startVisit")}
@@ -209,10 +186,7 @@ const NewNoteStartCard = ({ onFind, onNewPatient, onConfirmCandidate, isSearchLo
     return (
         <Flex align="center" justify="center" minH="80vh" px={4} py={8}>
             <Box
-                className="anim-fade-slide-up panels-bg"
-                css={{
-                    borderRadius: "2xl !important",
-                }}
+                className="anim-fade-slide-up new-note-card"
                 p={{ base: 6, md: 8 }}
                 w={{ base: "100%", sm: "90%", md: "520px" }}
                 maxW="520px"
@@ -226,16 +200,13 @@ const NewNoteStartCard = ({ onFind, onNewPatient, onConfirmCandidate, isSearchLo
                     <Heading
                         as="h1"
                         size="lg"
-                        color="textPrimary"
-                        css={{
-                            fontFamily: '"Space Grotesk", sans-serif',
-                        }}
+                        color="folio.ink"
                     >
                         {t("patient.newEncounter")}
                     </Heading>
                     <Text
                         fontSize="sm"
-                        color="textSecondary"
+                        color="folio.muted"
                         mt={2}
                         maxW="400px"
                         lineHeight={1.5}
@@ -248,19 +219,15 @@ const NewNoteStartCard = ({ onFind, onNewPatient, onConfirmCandidate, isSearchLo
                     {view === "choose" ? (
                         <Flex gap={3}>
                             <PathHalf
-                                icon={FaUserPlus}
+                                icon={LuUserPlus}
                                 title={t("patient.newPatient")}
                                 subtitle={t("patient.createNewRecord")}
-                                accent="primaryButton"
-                                tileBg="tile"
                                 onClick={onNewPatient}
                             />
                             <PathHalf
-                                icon={FaSearch}
+                                icon={LuSearch}
                                 title={t("patient.search")}
                                 subtitle={t("patient.existingPatient")}
-                                accent="secondaryButton"
-                                tileBg="tile"
                                 onClick={() => setView("search")}
                             />
                         </Flex>
@@ -282,15 +249,12 @@ const NewNoteStartCard = ({ onFind, onNewPatient, onConfirmCandidate, isSearchLo
                             </VStack>
                             <Button
                                 type="button"
-                                variant="outline"
+                                variant="folioSecondary"
                                 size="md"
                                 mt={3}
-                                borderRadius="2xl"
-                                className="switch-mode"
-                                css={startBtnSx}
                                 onClick={() => setView("search")}
                             >
-                                <FaArrowLeft />
+                                <LuArrowLeft strokeWidth={1.6} />
                                 {t("patient.back")}
                             </Button>
                         </Box>
@@ -312,15 +276,12 @@ const NewNoteStartCard = ({ onFind, onNewPatient, onConfirmCandidate, isSearchLo
                             </Flex>
                             <Button
                                 type="button"
-                                variant="outline"
+                                variant="folioSecondary"
                                 size="md"
                                 mt={3}
-                                borderRadius="2xl"
-                                className="switch-mode"
-                                css={startBtnSx}
                                 onClick={() => setView("choose")}
                             >
-                                <FaArrowLeft />
+                                <LuArrowLeft strokeWidth={1.6} />
                                 {t("patient.back")}
                             </Button>
                         </Box>

@@ -31,6 +31,9 @@ const ChatPanel = ({
     const scrollContainerRef = useRef(null);
     const userIsNearBottomRef = useRef(true);
     const filteredMessages = messages.filter((m) => m.role !== "system");
+    const prefersReducedMotionRef = useRef(
+        window.matchMedia("(prefers-reduced-motion: reduce)").matches,
+    );
 
     const getThinkingBlockState = (message, blockIndex = 0) => {
         if (!message) return false;
@@ -76,7 +79,9 @@ const ChatPanel = ({
 
     useEffect(() => {
         if (messagesEndRef.current && userIsNearBottomRef.current) {
-            messagesEndRef.current.scrollIntoView({ behavior: "smooth" });
+            messagesEndRef.current.scrollIntoView({
+                behavior: prefersReducedMotionRef.current ? "auto" : "smooth",
+            });
         }
     }, [messages]);
 
@@ -111,7 +116,9 @@ const ChatPanel = ({
                 flex="1"
                 overflowY="auto"
                 p="4"
-                className="floating-main sidebar-scroll-overlay"
+                className="attached-panel-body sidebar-scroll-overlay"
+                backgroundColor="folio.canvas"
+                color="folio.ink"
                 onScroll={() => {
                     const el = scrollContainerRef.current;
                     if (el) {
@@ -138,7 +145,14 @@ const ChatPanel = ({
                 <div ref={messagesEndRef} />
             </Box>
 
-            <Box p="3" className="floating-main">
+            <Box
+                p="3"
+                className="attached-panel-body"
+                backgroundColor="folio.paper"
+                color="folio.ink"
+                borderTopWidth="1px"
+                borderTopColor="folio.line"
+            >
                 {shouldShowQuickChatButtons && (
                     <QuickChatButtons
                         userSettings={userSettings}
@@ -153,7 +167,7 @@ const ChatPanel = ({
                     chatLoading={chatLoading}
                 />
 
-                <Text textAlign="center" fontSize="xs" color="overlay0">
+                <Text textAlign="center" fontSize="xs" color="folio.faint">
                     {t("chat.disclaimer")}
                 </Text>
             </Box>

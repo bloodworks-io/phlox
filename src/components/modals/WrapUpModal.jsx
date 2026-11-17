@@ -17,10 +17,10 @@ import {
     Dialog,
     Portal,
 } from "@chakra-ui/react";
-import { FaCheckDouble, FaPlus, FaTimes } from "react-icons/fa";
+import { LuCheckCheck, LuPlus, LuX } from "react-icons/lu";
 import useSWRMutation from "swr/mutation";
 import { patientApi } from "../../utils/api/patientApi";
-import { GreenButton } from "../common/Buttons";
+import { PrimaryButton } from "../common/Buttons";
 import AnimatedChevron from "../common/icons/AnimatedChevron";
 import { KEYS } from "../../utils/cache/keys";
 
@@ -162,7 +162,7 @@ const WrapUpModal = ({
                     <Dialog.Content className="modal-style">
                         <Dialog.Header>
                             <HStack>
-                                <FaCheckDouble />
+                                <LuCheckCheck strokeWidth={1.6} />
                                 <Heading as="h3" size="xl" fontFamily="heading">
                                     {t("modal.wrapUp.title")}
                                 </Heading>
@@ -178,13 +178,11 @@ const WrapUpModal = ({
                                 <Section title={t("modal.wrapUp.jobsToAction")}>
                                     {extracting ? (
                                         <Center py={6}>
-                                            <Spinner size="sm" />
+                                            <Spinner size="sm" color="folio.accent" />
                                             <Text
                                                 ml={2}
                                                 fontSize="sm"
-                                                color={
-                                                    "textSecondary"
-                                                }
+                                                color="folio.muted"
                                             >
                                                 {t("modal.wrapUp.extracting")}
                                             </Text>
@@ -193,7 +191,7 @@ const WrapUpModal = ({
                                       fallback !== "empty" ? (
                                         <Text
                                             fontSize="sm"
-                                            color={"textSecondary"}
+                                            color="folio.muted"
                                         >
                                             {t("modal.wrapUp.noTasksExtracted")}
                                         </Text>
@@ -242,9 +240,7 @@ const WrapUpModal = ({
                                                     variant="unstyled"
                                                     size="sm"
                                                     flex="1"
-                                                    color={
-                                                        "textPrimary"
-                                                    }
+                                                    color="folio.ink"
                                                     css={{
                                                         padding: 0,
                                                         height: "auto",
@@ -259,7 +255,7 @@ const WrapUpModal = ({
                                                         removeItem(idx)
                                                     }
                                                 >
-                                                    <FaTimes />
+                                                    <LuX strokeWidth={1.6} />
                                                 </IconButton>
                                             </HStack>
                                         ))}
@@ -286,7 +282,7 @@ const WrapUpModal = ({
                                             size="sm"
                                             onClick={addTask}
                                         >
-                                            <FaPlus />
+                                            <LuPlus strokeWidth={1.6} />
                                         </IconButton>
                                     </HStack>
                                 </Section>
@@ -296,7 +292,7 @@ const WrapUpModal = ({
                                         <Text
                                             fontSize="sm"
                                             fontWeight="600"
-                                            color={"textPrimary"}
+                                            color="folio.ink"
                                             cursor="pointer"
                                             userSelect="none"
                                             onClick={() =>
@@ -325,14 +321,14 @@ const WrapUpModal = ({
                                                                 key={idx}
                                                                 justify="space-between"
                                                             >
-                                                                <Text
-                                                                    fontSize="sm"
-                                                                    color={
-                                                                        "textSecondary"
-                                                                    }
-                                                                >
-                                                                    {item.text}
-                                                                </Text>
+                                                                 <Text
+                                                                     fontSize="sm"
+                                                                     color={
+                                                                         "folio.muted"
+                                                                     }
+                                                                 >
+                                                                     {item.text}
+                                                                 </Text>
                                                                  <IconButton
                                                                      aria-label={t("modal.wrapUp.promoteToTask")}
                                                                     size="xs"
@@ -343,7 +339,7 @@ const WrapUpModal = ({
                                                                         )
                                                                     }
                                                                 >
-                                                                    <FaPlus />
+                                                                    <LuPlus strokeWidth={1.6} />
                                                                 </IconButton>
                                                             </HStack>
                                                         ),
@@ -378,26 +374,20 @@ const WrapUpModal = ({
                                 <Button
                                     onClick={onClose}
                                     size="md"
-                                    borderRadius="2xl"
-                                    className="switch-mode"
-                                    css={{
-                                        fontFamily:
-                                            '"Space Grotesk", sans-serif',
-                                        fontWeight: "600",
-                                    }}
+                                    variant="folioSecondary"
                                     mr={3}
                                     disabled={submitting}
                                 >
                                     {t("action.cancel")}
                                 </Button>
-                                <GreenButton
+                                <PrimaryButton
                                     onClick={handleConfirm}
                                     loading={submitting}
                                     loadingText={t("modal.wrapUp.saving")}
                                     disabled={!canConfirm}
                                 >
                                     {t("modal.wrapUp.confirmFinish")}
-                                </GreenButton>
+                                </PrimaryButton>
                             </HStack>
                         </Dialog.Footer>
                     </Dialog.Content>

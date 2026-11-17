@@ -37,6 +37,18 @@ export default tseslint.config(
         },
     },
     {
+        files: ["playwright.config.ts", "tests/browser/**/*.{ts,tsx}"],
+        languageOptions: {
+            globals: { ...globals.browser, ...globals.node },
+        },
+    },
+    {
+        files: ["public/theme-boot.js"],
+        languageOptions: {
+            globals: { ...globals.browser },
+        },
+    },
+    {
         files: ["src/**/*.{js,jsx,ts,tsx}"],
         plugins: {
             "unused-imports": unusedImports,

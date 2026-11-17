@@ -118,7 +118,6 @@ const FormBuilder = ({
     const [resizeFieldId, setResizeFieldId] = useState<string | null>(null);
     const [resizeOrigin, setResizeOrigin] = useState<ResizeOrigin | null>(null);
 
-    const overlayBg = "var(--chakra-colors-hover-overlay)";
     const renderTaskRef = useRef<PdfRenderTask | null>(null);
     const isRenderingRef = useRef(false);
 
@@ -479,9 +478,9 @@ const FormBuilder = ({
                             align="center"
                             justify="center"
                             zIndex="10"
-                            bg={overlayBg}
+                            bg="folio.paperAlt/90"
                         >
-                            <Spinner size="sm" />
+                            <Spinner size="sm" color="folio.accent" />
                         </Flex>
                     )}
                     <canvas ref={pdfCanvasRef} style={{ display: "block" }} />

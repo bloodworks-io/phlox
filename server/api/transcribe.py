@@ -125,6 +125,7 @@ async def transcribe(
             rawTranscription=transcript_text,
             transcriptionDuration=transcription_duration,
             processDuration=float(processing_result["process_duration"]),
+            citations=processing_result.get("citations"),
         )
 
     except Exception as e:
@@ -204,6 +205,7 @@ async def reprocess_transcription(
             rawTranscription=transcript_text,
             transcriptionDuration=original_transcription_duration or 0.0,
             processDuration=float(processing_result["process_duration"]),
+            citations=processing_result.get("citations"),
         )
 
     except Exception as e:

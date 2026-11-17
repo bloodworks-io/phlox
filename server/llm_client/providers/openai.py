@@ -60,6 +60,8 @@ async def openai_compatible_chat(
             # Only force tool choice to required if explicitly specified
             if options and options.get("force_tools", False):
                 params["tool_choice"] = "required"
+            elif options and isinstance(options.get("tool_choice"), str):
+                params["tool_choice"] = options["tool_choice"]
 
         # Map options from our format to OpenAI format
         if options:
@@ -198,6 +200,20 @@ async def openai_compatible_chat(
                     "content": content,
                 },
             }
+
+
+            usage = getattr(response, "usage", None)
+            if usage is not None:
+                usage_dict = usage.model_dump() if hasattr(usage, "model_dump") else dict(usage)
+                result["usage"] = usage_dict
+                details = usage_dict.get("prompt_tokens_details") or {}
+                logger.debug(
+                    "LLM usage: model=%s prompt=%s cached=%s completion=%s",
+                    model,
+                    usage_dict.get("prompt_tokens"),
+                    details.get("cached_tokens"),
+                    usage_dict.get("completion_tokens"),
+                )
 
             # Expose logprobs (OpenAI-style payload) for readout-style
             # classification; absent when the provider dropped the params.

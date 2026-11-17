@@ -34,7 +34,9 @@ class LiveSession:
     # Best-effort anonymous speaker registry (S1, S2, ...) for live audio.
     speakers: SessionSpeakers = field(default_factory=SessionSpeakers)
     field_drafts: dict[str, str] = field(default_factory=dict)
+    initial_fields: dict[str, str] = field(default_factory=dict)
     user_touched: set[str] = field(default_factory=set)
+    field_last_editor: dict[str, str] = field(default_factory=dict)
     # Spoken format overrides: "list" | "narrative"; absent = template style.
     field_formats: dict[str, str] = field(default_factory=dict)
     staged_artifacts: list[dict[str, Any]] = field(default_factory=list)
@@ -48,6 +50,11 @@ class LiveSession:
     last_draft_at: float = field(default_factory=time.time)
     words_since_draft: int = 0
     segments_sent_to_agent: int = 0
+    tidy_settled: bool = False
+    stop_result: dict | None = field(default=None, repr=False, compare=False)
+    citations_input: dict | None = field(default=None, repr=False, compare=False)
+    citations_task: asyncio.Task | None = field(default=None, repr=False, compare=False)
+    citations_result: dict | None = field(default=None, repr=False, compare=False)
 
     def touch(self) -> None:
         self.last_activity = time.time()
@@ -55,6 +62,17 @@ class LiveSession:
     def end(self) -> None:
         if self.ended_at is None:
             self.ended_at = time.time()
+
+    async def settle_tasks(self, timeout: float = 15.0) -> None:
+        """Wait (bounded) for tracked background tasks, then cancel stragglers."""
+        pending = [task for task in self._tasks if not task.done()]
+        if not pending:
+            return
+        _done, unfinished = await asyncio.wait(pending, timeout=timeout)
+        for task in unfinished:
+            task.cancel()
+        if unfinished:
+            await asyncio.gather(*unfinished, return_exceptions=True)
 
     @property
     def is_ended(self) -> bool:
@@ -139,6 +157,7 @@ class SessionManager:
         )
         if initial_fields:
             session.field_drafts = {k: str(v) for k, v in initial_fields.items() if v is not None}
+        session.initial_fields = dict(session.field_drafts)
         self._sessions[session.id] = session
         return session
 

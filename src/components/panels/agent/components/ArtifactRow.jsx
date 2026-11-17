@@ -1,13 +1,13 @@
 import React from "react";
 import { Box, Text } from "@chakra-ui/react";
 import { useTranslation } from "react-i18next";
-import { FaEnvelope, FaFilePdf, FaFile, FaArrowRight } from "react-icons/fa";
+import { LuArrowRight, LuFile, LuFileText, LuMail } from "react-icons/lu";
 
 import { downloadFormFillArtifact } from "../../../pdf-forms/FormFillArtifact";
 
 const ARTIFACT_ROW_ICONS = {
-    letter: FaEnvelope,
-    form_fill: FaFilePdf,
+    letter: LuMail,
+    form_fill: LuFileText,
 };
 
 const _downloadUrl = (url, filename) => {
@@ -22,7 +22,7 @@ const _downloadUrl = (url, filename) => {
 /* A prepared output as one full-width action row. */
 export const ArtifactRow = ({ artifact, onOpenLetter }) => {
     const { t } = useTranslation();
-    const Icon = ARTIFACT_ROW_ICONS[artifact.type] || FaFile;
+    const Icon = ARTIFACT_ROW_ICONS[artifact.type] || LuFile;
     const label =
         artifact.title ||
         artifact.template_name ||
@@ -49,14 +49,14 @@ export const ArtifactRow = ({ artifact, onOpenLetter }) => {
             w="100%"
             p={2.5}
             borderWidth="1px"
-            borderColor="border"
-            borderRadius="8px"
-            bg="surfaceInset"
+            borderColor="folio.line"
+            borderRadius="folioPanel"
+            bg="folio.paper"
             cursor="pointer"
             textAlign="left"
             mb={1.5}
             transition="border-color 0.15s ease"
-            _hover={{ borderColor: "accent" }}
+            _hover={{ borderColor: "folio.accent" }}
             onClick={handleClick}
             aria-label={t("agent.artifact.aria", {
                 label,
@@ -67,7 +67,7 @@ export const ArtifactRow = ({ artifact, onOpenLetter }) => {
         >
             <Box
                 as="span"
-                color="accent"
+                color="folio.accent"
                 flexShrink={0}
                 display="flex"
                 alignItems="center"
@@ -78,7 +78,7 @@ export const ArtifactRow = ({ artifact, onOpenLetter }) => {
                 <Text fontSize="xs" fontWeight="semibold" truncate>
                     {label}
                 </Text>
-                <Text fontSize="xs" color="fg.subtle">
+                <Text fontSize="xs" color="folio.muted">
                     {artifact.saved
                         ? t("agent.artifact.saved")
                         : t("agent.artifact.preparedForReview")}{" "}
@@ -90,12 +90,12 @@ export const ArtifactRow = ({ artifact, onOpenLetter }) => {
             </Box>
             <Box
                 as="span"
-                color="fg.subtle"
+                color="folio.muted"
                 flexShrink={0}
                 display="flex"
                 alignItems="center"
             >
-                <FaArrowRight size="10px" />
+                <LuArrowRight size="10px" strokeWidth={1.6} />
             </Box>
         </Box>
     );

@@ -1,22 +1,24 @@
-export const getAvatarColor = (name) => {
-    // Catppuccin Frappé colors
-    const catppuccinColors = [
-        "#f2d5cf", // Rosewater
-        "#eebebe", // Flamingo
-        "#f4b8e4", // Pink
-        "#ca9ee6", // Mauve
-        "#e78284", // Red
-        "#ea999c", // Maroon
-        "#ef9f76", // Peach
-        "#e5c890", // Yellow
-        "#a6d189", // Green
-        "#81c8be", // Teal
-        "#99d1db", // Sky
-        "#85c1dc", // Sapphire
-        "#8caaee", // Blue
-        "#babbf1", // Lavender
-    ];
+// Deterministic Clinical Folio avatar hues, pre-mixed 62% hue / 38% #20251f
+// exactly as the design portfolio renders them. White initials retain at
+// least 4.5:1 contrast on every background.
+export const FOLIO_AVATAR_COLORS = [
+    "#745752",
+    "#516552",
+    "#6C6246",
+    "#5A5464",
+    "#4B6466",
+    "#705D4C",
+    "#7E6059",
+    "#5A6F56",
+    "#83734C",
+    "#55726F",
+    "#6C6476",
+    "#504039",
+    "#38483B",
+    "#7E6752",
+];
 
+export const getAvatarColor = (name) => {
     // Simple hash function for the name
     let hash = 0;
     if (name) {
@@ -26,8 +28,8 @@ export const getAvatarColor = (name) => {
     }
 
     // Get a consistent color from the array
-    const index = Math.abs(hash) % catppuccinColors.length;
-    return catppuccinColors[index];
+    const index = Math.abs(hash) % FOLIO_AVATAR_COLORS.length;
+    return FOLIO_AVATAR_COLORS[index];
 };
 
 export const getInitials = (name) => {

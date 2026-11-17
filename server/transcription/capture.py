@@ -336,6 +336,7 @@ async def finalize(session: CaptureSession) -> dict:
     )
     return {
         "fields": dict(processing_result["fields"]),
+        "citations": processing_result.get("citations"),
         "rawTranscription": transcript_text,
         "transcriptionDuration": round(session.stt_seconds, 2),
         "processDuration": float(processing_result["process_duration"]),

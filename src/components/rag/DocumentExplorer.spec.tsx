@@ -13,6 +13,7 @@ vi.mock("../../utils/api/ragApi", () => ({
         fetchCollections: vi.fn(),
         renameCollection: vi.fn(),
         downloadPdf: vi.fn(),
+        updateDocumentMetadata: vi.fn(),
     },
 }));
 vi.mock("@/components/ui/toaster", () => ({
@@ -167,6 +168,68 @@ describe("DocumentExplorer", () => {
             name: "guide.pdf",
             collection: "influenza",
         });
+    });
+
+    it("object-shaped files expose the edit-document control; plain strings do not", async () => {
+        vi.mocked(ragApi.fetchCollectionFiles).mockResolvedValue({
+            files: [
+                { filename: "guide.pdf", title: "Flu Guide", has_pdf: false },
+                "plain-notes.pdf",
+            ],
+        });
+        renderExplorer();
+
+        fireEvent.click(
+            screen.getAllByLabelText(t("rag.toggleCollection") as string)[0],
+        );
+
+        expect(
+            await screen.findAllByLabelText(t("rag.editDocument") as string),
+        ).toHaveLength(1);
+        expect(screen.getByText("Flu Guide")).toBeInTheDocument();
+        expect(screen.getByText("plain-notes.pdf")).toBeInTheDocument();
+    });
+
+    it("saved metadata updates the matching file row in place", async () => {
+        vi.mocked(ragApi.fetchCollectionFiles).mockResolvedValue({
+            files: [
+                {
+                    filename: "guide.pdf",
+                    title: "Flu Guide",
+                    source: null,
+                    focus_area: null,
+                    has_pdf: false,
+                },
+            ],
+        });
+        vi.mocked(ragApi.updateDocumentMetadata).mockResolvedValue({});
+        renderExplorer();
+
+        fireEvent.click(
+            screen.getAllByLabelText(t("rag.toggleCollection") as string)[0],
+        );
+        fireEvent.click(
+            await screen.findByLabelText(t("rag.editDocument") as string),
+        );
+        const title = await screen.findByDisplayValue("Flu Guide");
+        fireEvent.change(title, { target: { value: "Influenza guideline" } });
+        fireEvent.click(
+            screen.getByRole("button", { name: t("action.save") as string }),
+        );
+
+        await waitFor(() => {
+            expect(ragApi.updateDocumentMetadata).toHaveBeenCalledWith({
+                collection_name: "influenza",
+                filename: "guide.pdf",
+                title: "Influenza guideline",
+                source: null,
+                focus_area: null,
+            });
+        });
+        await waitFor(() => {
+            expect(screen.getByText("Influenza guideline")).toBeInTheDocument();
+        });
+        expect(screen.queryByText("Flu Guide")).toBeNull();
     });
 
     it("rename via prompt renames and refetches collections", async () => {

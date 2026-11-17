@@ -15,3 +15,13 @@ if (typeof window !== "undefined" && !window.matchMedia) {
         dispatchEvent: () => false,
     });
 }
+
+// jsdom omits ResizeObserver; floating-ui/zag positioning calls it when
+// popovers and tooltips open.
+if (typeof window !== "undefined" && !window.ResizeObserver) {
+    window.ResizeObserver = class {
+        observe() {}
+        unobserve() {}
+        disconnect() {}
+    };
+}

@@ -20,7 +20,7 @@ dependencies = [
 rag = [
     "mcp==1.30.0",
     "numpy==2.5.1",
-    "pypdf==6.21.1",
+    "pypdf==6.21.4",
     "sherpa-onnx==1.13.8",
     "sherpa-onnx-core==1.13.8",
     "sqlite-vec==0.1.9",
@@ -61,6 +61,10 @@ line-length = 100
 [tool.ruff.lint]
 select = ["E", "W", "F", "I", "B", "C4", "UP", "ARG", "PTH", "SIM", "TCH"]
 ignore = ["E501", "B008", "UP007", "SIM108"]
+
+[tool.ruff.lint.per-file-ignores]
+# Test fakes/stubs routinely accept unused arguments to mirror real signatures
+"tests/**" = ["ARG"]
 
 [tool.ruff.format]
 quote-style = "double"

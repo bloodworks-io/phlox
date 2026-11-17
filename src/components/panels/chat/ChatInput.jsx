@@ -47,7 +47,16 @@ const ChatInput = ({
     };
 
     return (
-        <Box className="dashboard-chat-input-container" w="100%" mb="2">
+        <Box
+            className="attached-chat-input"
+            w="100%"
+            mb="2"
+            backgroundColor="folio.paperAlt"
+            border="1px solid"
+            borderColor="folio.line"
+            borderRadius="folioControl"
+            p="10px 16px"
+        >
             <Flex align="center" gap={2}>
                 <Textarea
                     ref={textareaRef}
@@ -65,8 +74,8 @@ const ChatInput = ({
                     px="3"
                     fontSize="sm"
                     lineHeight="1.35"
-                    color="textPrimary"
-                    _placeholder={{ color: "textQuaternary" }}
+                    color="folio.ink"
+                    _placeholder={{ color: "folio.faint" }}
                     _focusVisible={{
                         boxShadow: "none",
                     }}
@@ -81,15 +90,21 @@ const ChatInput = ({
                     size="sm"
                     alignSelf="center"
                     borderRadius="full"
-                    bg={canSend ? "sendButton" : "sendButtonDisabled"}
-                    color={canSend ? "sendButtonText" : "sendButtonTextDisabled"}
+                    bg={canSend ? "folio.accent" : "folio.paper"}
+                    color={canSend ? "folio.accentInk" : "folio.faint"}
+                    borderColor={canSend ? "folio.accent" : "folio.line"}
+                    borderWidth="1px"
                     _hover={{
-                        bg: canSend
-                            ? "sendButtonHover"
-                            : "sendButtonHoverDisabled",
-                        transform: "scale(1.05)",
+                        bg: canSend ? "folio.accent/90" : "folio.paper",
+                        color: canSend ? "folio.accentInk" : "folio.faint",
                     }}
-                    transition="all 0.2s ease"><ArrowUpIcon /></IconButton>
+                    _focusVisible={{
+                        outline: "2px solid",
+                        outlineColor: "folio.focus",
+                        outlineOffset: "2px",
+                    }}
+                    transition="color 160ms ease, background-color 160ms ease, border-color 160ms ease, opacity 160ms ease"
+                ><ArrowUpIcon /></IconButton>
             </Flex>
         </Box>
     );

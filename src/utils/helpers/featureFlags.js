@@ -43,6 +43,14 @@ export const isPdfFormsEnabled = () => {
   return true;
 };
 
+/**
+ * Companion (phone sync) UI. Not ready for release: hidden until
+ * re-enabled with VITE_COMPANION_UI=true (e.g. `VITE_COMPANION_UI=true tauri dev`).
+ */
+export const isCompanionEnabled = () => {
+  return import.meta.env.VITE_COMPANION_UI === "true";
+};
+
 //Turn off forced splash screen for normal dev work with `VITE_FORCE_SPLASH=false tauri dev`.
 export const isForceSplashEnabled = () => {
   if (!isTauri() || !import.meta.env.DEV) return false;

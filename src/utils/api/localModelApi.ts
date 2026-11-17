@@ -216,6 +216,20 @@ export const localModelApi = {
       errorMessage: t("api.localModels.restartWhisperFailed"),
     }),
 
+  startCompanionHost: async () => {
+    if (isTauri()) {
+      return await invoke("start_companion_host");
+    }
+    throw new Error(t("api.localModels.restartWhisperTauriOnly") as string);
+  },
+
+  stopCompanionHost: async () => {
+    if (isTauri()) {
+      return await invoke("stop_companion_host");
+    }
+    throw new Error(t("api.localModels.restartWhisperTauriOnly") as string);
+  },
+
   // Embedding model management
   fetchEmbeddingStatus: async () =>
     handleApiRequest({

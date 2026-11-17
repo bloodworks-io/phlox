@@ -47,6 +47,13 @@ export const useReasoning = (options = {}) => {
         } catch (error) {
             console.error("Error generating reasoning:", error);
             setStatus(null);
+            toast({
+                title: t("toast.error"),
+                description:
+                    error.message || t("api.patient.generateReasoningFailed"),
+                type: "error",
+                duration: 5000,
+            });
         } finally {
             setLoading(false);
         }

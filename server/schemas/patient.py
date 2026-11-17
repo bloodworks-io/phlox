@@ -23,6 +23,8 @@ class Patient(BaseModel):
     raw_transcription: str | None = None
     transcription_duration: float | None = None
     process_duration: float | None = None
+    # Transcript-grounded citations envelope: {transcript_line_count, resolved, fields}.
+    note_citations: dict[str, Any] | None = None
     primary_condition: str | None = None
     final_letter: str | None = None
     encounter_summary: str | None = None
@@ -82,6 +84,9 @@ class TranscribeResponse(BaseModel):
     rawTranscription: str
     transcriptionDuration: float
     processDuration: float
+    # Post-hoc grounding: field_key -> list of line citations (optional —
+    # absent for document flows and whenever grounding was unavailable).
+    citations: dict[str, Any] | None = None
 
     class Config:
         arbitrary_types_allowed = True

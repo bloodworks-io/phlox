@@ -18,8 +18,12 @@ import {
     DownloadIcon,
 } from "../common/icons";
 import AnimatedChevron from "../common/icons/AnimatedChevron";
-import { FaFolder, FaFolderOpen, FaFile } from "react-icons/fa";
-import { MdOutlineFolderCopy } from "react-icons/md";
+import {
+    LuFile,
+    LuFolder,
+    LuFolderOpen,
+    LuFolderTree,
+} from "react-icons/lu";
 import { ragApi } from "../../utils/api/ragApi";
 import { formatCollectionName } from "../../utils/helpers/formatHelpers";
 import { EditDocumentPopover } from "./EditDocumentPopover";
@@ -159,21 +163,21 @@ const DocumentExplorer = ({
         }
     };
     return (
-        <Box className="panels-bg" p="4" borderRadius="sm">
+        <Box className="rag-panel" p="4" borderRadius="sm">
             <Flex align="center" justify="space-between">
                 <Flex align="center">
                     <IconButton
                         onClick={() => setIsCollapsed(!isCollapsed)}
                         aria-label={t("rag.toggleCollapse")}
-                        variant="outline"
+                        variant="ghost"
                         size="sm"
                         mr="2"
-                        className="collapse-toggle"
+                        className="rag-collapse-toggle"
                     >
                         <AnimatedChevron isOpen={!isCollapsed} />
                     </IconButton>
                     <HStack gap={2}>
-                        <MdOutlineFolderCopy size="1.2em" />
+                        <LuFolderTree size="1.2em" strokeWidth={1.6} />
                         <Text as="h3">{t("rag.documentExplorer")}</Text>
                     </HStack>
                 </Flex>
@@ -199,8 +203,8 @@ const DocumentExplorer = ({
                                         <Flex
                                             alignItems="center"
                                             p="2"
-                                            className="documentExplorer-style"
-                                            _hover={{ bg: "surfaceMuted" }}
+                                            className="rag-row"
+                                            _hover={{ bg: "folio.hover" }}
                                         >
                                             <Tooltip
                                                 content={t("rag.toggleCollection")}
@@ -216,7 +220,6 @@ const DocumentExplorer = ({
                                                     variant="ghost"
                                                     size="sm"
                                                     mr="2"
-                                                    className="documentExplorer-button"
                                                 >
                                                     <AnimatedChevron
                                                         isOpen={
@@ -232,11 +235,11 @@ const DocumentExplorer = ({
                                                     expandedCollections[
                                                         collection.name
                                                     ]
-                                                        ? FaFolderOpen
-                                                        : FaFolder
+                                                        ? LuFolderOpen
+                                                        : LuFolder
                                                 }
                                                 mr="2"
-                                                color="yellow.500"
+                                                color="folio.accent"
                                             />
                                             <Text
                                                 fontSize="md"
@@ -266,7 +269,8 @@ const DocumentExplorer = ({
                                                         }}
                                                         size="sm"
                                                         variant="ghost"
-                                                        colorPalette="blue"
+                                                        color="folio.info"
+                                                        _hover={{ bg: "folio.infoSoft" }}
                                                     >
                                                         <EditIcon />
                                                     </IconButton>
@@ -287,7 +291,8 @@ const DocumentExplorer = ({
                                                         }
                                                         size="sm"
                                                         variant="ghost"
-                                                        colorPalette="red"
+                                                        color="folio.danger"
+                                                        _hover={{ bg: "folio.dangerSoft" }}
                                                     >
                                                         <DeleteIcon />
                                                     </IconButton>
@@ -305,7 +310,7 @@ const DocumentExplorer = ({
                                                 <List.Root
                                                     pl="8"
                                                     py="2"
-                                                    className="filelist-style"
+                                                    className="rag-file-list"
                                                 >
                                                     {collection.files.length ===
                                                         0 &&
@@ -351,13 +356,13 @@ const DocumentExplorer = ({
                                                                                 "0.15s",
                                                                         }}
                                                                     >
-                                                                        <Box
-                                                                            as={
-                                                                                FaFile
-                                                                            }
-                                                                            mr="2"
-                                                                            color="primaryButton"
-                                                                        />
+                                                                         <Box
+                                                                             as={
+                                                                                 LuFile
+                                                                             }
+                                                                             mr="2"
+                                                                             color="folio.info"
+                                                                         />
                                                                         <Text fontSize="sm">
                                                                             {fileTitle ||
                                                                                 fileName}
@@ -431,10 +436,11 @@ const DocumentExplorer = ({
                                                                                                 fileName,
                                                                                             )
                                                                                         }
-                                                                                        size="xs"
-                                                                                        variant="ghost"
-                                                                                        colorPalette="blue"
-                                                                                        mr="1"
+                                                                                         size="xs"
+                                                                                         variant="ghost"
+                                                                                         color="folio.info"
+                                                                                         _hover={{ bg: "folio.infoSoft" }}
+                                                                                         mr="1"
                                                                                     >
                                                                                         <DownloadIcon />
                                                                                     </IconButton>
@@ -456,10 +462,11 @@ const DocumentExplorer = ({
                                                                                             },
                                                                                         )
                                                                                     }
-                                                                                    size="xs"
-                                                                                    variant="ghost"
-                                                                                    colorPalette="red"
-                                                                                >
+                                                                                     size="xs"
+                                                                                     variant="ghost"
+                                                                                     color="folio.danger"
+                                                                                     _hover={{ bg: "folio.dangerSoft" }}
+                                                                                 >
                                                                                     <DeleteIcon />
                                                                                 </IconButton>
                                                                             </Tooltip>
@@ -471,7 +478,7 @@ const DocumentExplorer = ({
                                                     ) : (
                                                         <List.Item
                                                             fontSize="sm"
-                                                            color="overlay0"
+                                                            color="folio.muted"
                                                         >
                                                             {t("rag.noFilesFound")}
                                                         </List.Item>

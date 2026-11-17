@@ -1,11 +1,11 @@
 import {
-    FaTools,
-    FaWikipediaW,
-    FaBookMedical,
-    FaSearch,
-    FaFileAlt,
-    FaRegCommentDots,
-} from "react-icons/fa";
+    LuBookOpen,
+    LuBriefcaseMedical,
+    LuFileText,
+    LuMessageCircle,
+    LuSearch,
+    LuWrench,
+} from "react-icons/lu";
 
 export const getToolName = (toolBlock) => {
     const attrs = toolBlock?.attrs || {};
@@ -24,60 +24,66 @@ export const getToolPresentation = (toolName = "") => {
 
     if (normalized.includes("wiki")) {
         return {
-            icon: FaWikipediaW,
+            icon: LuBookOpen,
             label: "Wikipedia",
             colorScheme: "blue",
-            borderColor: "blue.300",
-            bg: "blue.50",
+            color: "folio.info",
+            borderColor: "folio.info",
+            bg: "folio.infoSoft",
         };
     }
 
     if (normalized.includes("pubmed")) {
         return {
-            icon: FaBookMedical,
+            icon: LuBriefcaseMedical,
             label: "PubMed",
             colorScheme: "teal",
-            borderColor: "teal.300",
-            bg: "teal.50",
+            color: "folio.info",
+            borderColor: "folio.info",
+            bg: "folio.infoSoft",
         };
     }
 
     if (normalized.includes("literature")) {
         return {
-            icon: FaSearch,
+            icon: LuSearch,
             label: "Literature search",
             colorScheme: "green",
-            borderColor: "green.300",
-            bg: "green.50",
+            color: "folio.success",
+            borderColor: "folio.success",
+            bg: "folio.successSoft",
         };
     }
 
     if (normalized.includes("transcript")) {
         return {
-            icon: FaFileAlt,
+            icon: LuFileText,
             label: "Transcript",
             colorScheme: "orange",
-            borderColor: "orange.300",
-            bg: "orange.50",
+            color: "folio.warning",
+            borderColor: "folio.warning",
+            bg: "folio.warningSoft",
         };
     }
 
     if (normalized.includes("direct_response")) {
         return {
-            icon: FaRegCommentDots,
+            icon: LuMessageCircle,
             label: "Direct response",
             colorScheme: "gray",
-            borderColor: "gray.300",
-            bg: "gray.50",
+            color: "folio.muted",
+            borderColor: "folio.line",
+            bg: "folio.paperAlt",
         };
     }
 
     return {
-        icon: FaTools,
+        icon: LuWrench,
         label: "Tool",
         colorScheme: "purple",
-        borderColor: "purple.300",
-        bg: "purple.50",
+        color: "folio.accent",
+        borderColor: "folio.accent",
+        bg: "folio.accentSoft",
     };
 };
 

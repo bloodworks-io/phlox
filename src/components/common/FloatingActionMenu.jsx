@@ -3,7 +3,7 @@ import { useTranslation } from "react-i18next";
 import { IconButton, Box } from "@chakra-ui/react";
 import { Tooltip } from "@/components/ui/tooltip";
 import { ChatIcon } from "./icons";
-import { FaEnvelope, FaAtom, FaFileUpload, FaClock } from "react-icons/fa";
+import { LuAtom, LuClock, LuFileUp, LuMail } from "react-icons/lu";
 import PillBox from "./PillBox";
 import { isChatEnabled } from "../../utils/helpers/featureFlags";
 
@@ -24,9 +24,26 @@ const FloatingActionMenu = ({
     isEncounterSaved = false,
 }) => {
     const { t } = useTranslation();
-    const surfaceBg = "surface";
 
-    const getButtonBg = (isOpen) => (isOpen ? surfaceBg : "transparent");
+    const previousVisitLabel = showPreviousVisitDot
+        ? `${t("common.fab.openPreviousVisit")}, ${t("common.fab.previousVisitUnread")}`
+        : t("common.fab.openPreviousVisit");
+    const reasoningLabel = hasCriticalReasoning
+        ? `${t("common.fab.openReasoning")}, ${t("common.fab.criticalReasoning")}`
+        : t("common.fab.openReasoning");
+    const buttonState = (isOpen) => ({
+        bg: isOpen ? "folio.accentSoft" : "transparent",
+        color: isOpen ? "folio.accent" : "folio.muted",
+        _hover: {
+            bg: "folio.hover",
+            color: "folio.ink",
+        },
+        _focusVisible: {
+            outline: "2px solid",
+            outlineColor: "folio.focus",
+            outlineOffset: "2px",
+        },
+    });
 
     return (
         <PillBox
@@ -52,15 +69,15 @@ const FloatingActionMenu = ({
                         id="fab-document"
                         onClick={onOpenDocument}
                         aria-label={t("common.fab.openDocumentUpload")}
+                        aria-pressed={isDocumentOpen}
                         size="xs"
                         borderRadius="full"
                         variant="ghost"
                         m={0}
-                        bg={getButtonBg(isDocumentOpen)}
-                        _hover={{ bg: surfaceBg }}
-                        className="pill-box-icons"
+                        className="folio-rail-button"
+                        {...buttonState(isDocumentOpen)}
                     >
-                        <FaFileUpload />
+                        <LuFileUp strokeWidth={1.6} />
                     </IconButton>
                 </Tooltip>
             )}
@@ -79,32 +96,35 @@ const FloatingActionMenu = ({
                     <IconButton
                         id="fab-previous-visit"
                         onClick={onOpenPreviousVisit}
-                        aria-label={t("common.fab.openPreviousVisit")}
+                        aria-label={previousVisitLabel}
+                        aria-pressed={isPreviousVisitOpen}
                         size="xs"
                         borderRadius="full"
                         variant="ghost"
                         m={0}
-                        bg={getButtonBg(isPreviousVisitOpen)}
-                        _hover={{ bg: surfaceBg }}
-                        className="pill-box-icons"
+                        className="folio-rail-button"
                         disabled={!hasPreviousVisit}
                         opacity={!hasPreviousVisit ? 0.4 : 1}
                         cursor={
                             !hasPreviousVisit ? "not-allowed" : "pointer"
                         }
+                        {...(hasPreviousVisit
+                            ? buttonState(isPreviousVisitOpen)
+                            : { color: "folio.faint" })}
                     >
-                        <FaClock />
+                        <LuClock strokeWidth={1.6} />
                     </IconButton>
                 </Tooltip>
                 {showPreviousVisitDot && hasPreviousVisit && (
                     <Box
+                        aria-hidden="true"
                         position="absolute"
                         top="0"
                         right="0"
                         w="8px"
                         h="8px"
                         borderRadius="full"
-                        bg="dangerButton"
+                        bg="folio.danger"
                         zIndex={2}
                         pointerEvents="none"
                     />
@@ -122,13 +142,13 @@ const FloatingActionMenu = ({
                         id="fab-chat"
                         onClick={onOpenChat}
                         aria-label={t("common.fab.openChat")}
+                        aria-pressed={isChatOpen}
                         size="xs"
                         borderRadius="full"
                         m={0}
                         variant="ghost"
-                        bg={getButtonBg(isChatOpen)}
-                        _hover={{ bg: surfaceBg }}
-                        className="pill-box-icons"
+                        className="folio-rail-button"
+                        {...buttonState(isChatOpen)}
                     >
                         <ChatIcon />
                     </IconButton>
@@ -150,32 +170,35 @@ const FloatingActionMenu = ({
                         <IconButton
                             id="fab-reasoning"
                             onClick={onOpenReasoning}
-                            aria-label={t("common.fab.openReasoning")}
+                            aria-label={reasoningLabel}
+                            aria-pressed={isReasoningOpen}
                             size="xs"
                             borderRadius="full"
                             m={0}
                             variant="ghost"
-                            bg={getButtonBg(isReasoningOpen)}
-                            _hover={{ bg: surfaceBg }}
-                            className="pill-box-icons"
+                            className="folio-rail-button"
                             disabled={!isEncounterSaved}
                             opacity={!isEncounterSaved ? 0.4 : 1}
                             cursor={
                                 !isEncounterSaved ? "not-allowed" : "pointer"
                             }
+                            {...(isEncounterSaved
+                                ? buttonState(isReasoningOpen)
+                                : { color: "folio.faint" })}
                         >
-                            <FaAtom />
+                            <LuAtom strokeWidth={1.6} />
                         </IconButton>
                     </Tooltip>
                     {hasCriticalReasoning && isEncounterSaved && (
                         <Box
+                            aria-hidden="true"
                             position="absolute"
                             top="0"
                             right="0"
                             w="8px"
                             h="8px"
                             borderRadius="full"
-                            bg="dangerButton"
+                            bg="folio.danger"
                             zIndex={2}
                             pointerEvents="none"
                         />
@@ -197,18 +220,20 @@ const FloatingActionMenu = ({
                     id="fab-letter"
                     onClick={onOpenLetter}
                     aria-label={t("common.fab.openLetter")}
+                    aria-pressed={isLetterOpen}
                     size="sm"
                     borderRadius="full"
                     m={0}
                     variant="ghost"
-                    bg={getButtonBg(isLetterOpen)}
-                    _hover={{ bg: surfaceBg }}
-                    className="pill-box-icons"
+                    className="folio-rail-button"
                     disabled={!isEncounterSaved}
                     opacity={!isEncounterSaved ? 0.4 : 1}
                     cursor={!isEncounterSaved ? "not-allowed" : "pointer"}
+                    {...(isEncounterSaved
+                        ? buttonState(isLetterOpen)
+                        : { color: "folio.faint" })}
                 >
-                    <FaEnvelope />
+                    <LuMail strokeWidth={1.6} />
                 </IconButton>
             </Tooltip>
         </PillBox>

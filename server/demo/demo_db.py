@@ -91,6 +91,9 @@ def initialize_fake_patients():
             "template_key": "phlox_01",  # Using Phlox template for example patients
             "template_data": json.dumps(template_data),
             "raw_transcription": patient_data["transcript"],
+            "note_citations": json.dumps(patient_data["note_citations"])
+            if patient_data.get("note_citations")
+            else None,
             "transcription_duration": round(random.uniform(5.0, 15.0), 2),  # nosec B311
             "process_duration": round(random.uniform(10.0, 30.0), 2),  # nosec B311
             "final_letter": patient_data["letter"],
@@ -112,11 +115,12 @@ def initialize_fake_patients():
                 INSERT INTO encounters (
                     ur_number, encounter_date,
                     template_key, template_data, raw_transcription,
+                    note_citations,
                     transcription_duration, process_duration,
                     jobs_list, all_jobs_completed, final_letter,
                     primary_condition, encounter_summary
                 )
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """,
                 (
                     patient["ur_number"],
@@ -124,6 +128,7 @@ def initialize_fake_patients():
                     patient["template_key"],
                     patient["template_data"],
                     patient["raw_transcription"],
+                    patient["note_citations"],
                     patient["transcription_duration"],
                     patient["process_duration"],
                     patient["jobs_list"],

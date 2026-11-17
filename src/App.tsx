@@ -12,7 +12,10 @@ import AppLayout from "./components/layout/AppLayout";
 import AppRoutes from "./components/layout/AppRoutes";
 import ConfirmDialog from "./components/common/ConfirmDialog";
 import NewNoteModal from "./components/modals/NewNoteModal";
+import CompanionImportModal from "./components/modals/CompanionImportModal";
+import { useDisclosure } from "@chakra-ui/react";
 import { handleError } from "./utils/helpers/errorHandlers";
+import { isCompanionEnabled } from "./utils/helpers/featureFlags";
 import { handleLoadPatientDetails } from "./utils/patient/patientHandlers";
 import { usePatientSession } from "./utils/hooks/usePatientSession";
 import { useAppBootstrap } from "./utils/hooks/useAppBootstrap";
@@ -46,6 +49,11 @@ function AppContent({ setIsInitializing }: AppContentProps) {
     const bootstrap = useAppBootstrap();
     const nav = useNavigationGuard(isModified, setIsModified);
     const newNote = useNewNoteFlow();
+    const {
+        open: isCompanionImportOpen,
+        onOpen: onOpenCompanionImport,
+        onClose: onCloseCompanionImport,
+    } = useDisclosure();
     const { isSidebarCollapsed, toggleSidebar, isSmallScreen } =
         useSidebarState();
     const { colorMode, toggleColorMode } = useColorMode();
@@ -128,6 +136,8 @@ function AppContent({ setIsInitializing }: AppContentProps) {
                     isAdmin,
                     patientScope,
                     setPatientScope,
+                    onOpenCompanionImport: () =>
+                        nav.guardedAction(onOpenCompanionImport),
                 }}
             >
                 <AppRoutes
@@ -147,7 +157,6 @@ function AppContent({ setIsInitializing }: AppContentProps) {
                 key={String(newNote.isNewNoteOpen)}
                 isOpen={newNote.isNewNoteOpen}
                 onClose={newNote.closeNewNoteModal}
-                _patient={undefined}
                 setPatient={setPatient}
                 createNewPatient={createNewPatient}
                 findPatients={findPatients}
@@ -155,6 +164,12 @@ function AppContent({ setIsInitializing }: AppContentProps) {
                 selectedDate={selectedDate}
                 onComplete={newNote.completeNewNote}
             />
+            {isCompanionEnabled() && (
+                <CompanionImportModal
+                    isOpen={isCompanionImportOpen}
+                    onClose={onCloseCompanionImport}
+                />
+            )}
             <ConfirmDialog
                 isOpen={nav.isLeaveOpen}
                 onClose={nav.cancelNavigation}
@@ -162,7 +177,6 @@ function AppContent({ setIsInitializing }: AppContentProps) {
                 title={t("navigation.confirmTitle")}
                 body={t("navigation.leaveWarning")}
                 confirmLabel={t("navigation.leave")}
-                cancelLabel={undefined}
             />
         </>
     );

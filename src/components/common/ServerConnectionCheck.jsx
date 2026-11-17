@@ -61,11 +61,11 @@ export const ServerConnectionCheck = ({ children }) => {
         display="flex"
         alignItems="center"
         justifyContent="center"
-        bg="surfaceInset"
+        className="splash-bg"
       >
         <VStack gap={4}>
-          <Spinner size="xl" color="primaryButton" />
-          <Text fontSize="lg" fontWeight="medium">
+          <Spinner size="xl" color="folio.accent" />
+          <Text fontSize="lg" fontWeight="medium" color="folio.muted">
             {t("common.initializing")}
           </Text>
         </VStack>

@@ -1,5 +1,6 @@
 """Tests for the live scribe agent: sessions, tools, and router endpoints."""
 
+import asyncio
 import json
 import math
 from types import SimpleNamespace
@@ -11,7 +12,7 @@ from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
 from server.agent_live import router as agent_live_router
-from server.agent_live.router import _current_owner, _get_owned_session
+from server.agent_live.router import _current_owner, _get_owned_session, stop_session
 from server.agent_live.session import LiveSession, session_manager
 from server.agent_live.tools import (
     _normalise_entry,
@@ -176,6 +177,30 @@ async def test_update_note_field_rejects_clinician_edits_in_live_mode():
         session, "update_note_field", {"field_key": "plan", "content": "rewritten"}
     )
     assert session.field_drafts["plan"] == "rewritten"
+
+
+@pytest.mark.asyncio
+async def test_tool_edits_mark_agent_as_last_editor():
+    session = _make_session()
+    session.user_touched.add("plan")
+    refused = await execute_live_tool(
+        session, "update_note_field", {"field_key": "plan", "content": "overwritten"}
+    )
+    assert "clinician manually edited" in refused["content"]
+    assert session.field_last_editor == {}
+
+    session.user_touched.discard("plan")
+    await execute_live_tool(
+        session, "update_note_field", {"field_key": "plan", "content": "1. GP review"}
+    )
+    session.field_drafts["clinical_history"] = "• Fatigue"
+    await execute_live_tool(
+        session, "append_to_field", {"field_key": "clinical_history", "entry": "Weight loss"}
+    )
+    await execute_live_tool(
+        session, "remove_from_field", {"field_key": "clinical_history", "phrase": "Fatigue"}
+    )
+    assert session.field_last_editor == {"plan": "agent", "clinical_history": "agent"}
 
 
 @pytest.mark.asyncio
@@ -774,6 +799,74 @@ def test_feedback_marks_clinician_edits():
     assert session.field_drafts["plan"] == "1. Clinician rewrite"
     assert "plan" in session.user_touched
     assert "bogus" not in session.field_drafts
+
+
+def test_feedback_marks_clinician_as_last_editor():
+    response = client.post(
+        "/api/agent-live/sessions",
+        json={
+            "patient": {"name": "Test"},
+            "template_key": "phlox_01",
+            "template_data": {"plan": "1. Original"},
+        },
+    )
+    session_id = response.json()["session_id"]
+    session = session_manager.get(session_id)
+    assert session is not None
+    session.field_last_editor["plan"] = "agent"
+
+    response = client.post(
+        f"/api/agent-live/sessions/{session_id}/feedback",
+        json={"fields": {"plan": "1. Clinician rewrite"}},
+    )
+    assert response.status_code == 200
+    assert session.field_last_editor["plan"] == "clinician"
+
+
+def test_stop_final_state_includes_agent_edits():
+    response = client.post(
+        "/api/agent-live/sessions",
+        json={"patient": {"name": "Test"}},
+    )
+    session_id = response.json()["session_id"]
+    session = session_manager.get(session_id)
+    assert session is not None
+    session.field_last_editor["pmh"] = "agent"
+
+    response = client.post(f"/api/agent-live/sessions/{session_id}/stop")
+    assert response.status_code == 200
+    assert response.json()["agent_edits"] == {"pmh": "agent"}
+
+
+def test_stop_final_state_includes_initial_fields():
+    session = session_manager.create(
+        owner_user=CurrentUser(1, "local", "admin"),
+        patient_context={"name": "Test"},
+        template_key=None,
+        template_fields=[],
+        initial_fields={"clinical_history": "carry me over"},
+    )
+
+    response = client.post(f"/api/agent-live/sessions/{session.id}/stop")
+    assert response.status_code == 200
+    assert response.json()["initial_fields"] == {"clinical_history": "carry me over"}
+
+
+def test_events_stream_replays_agent_edits():
+    response = client.post(
+        "/api/agent-live/sessions",
+        json={"patient": {"name": "Test"}},
+    )
+    session_id = response.json()["session_id"]
+    session = session_manager.get(session_id)
+    assert session is not None
+    session.field_last_editor["pmh"] = "agent"
+
+    client.post(f"/api/agent-live/sessions/{session_id}/stop")
+    response = client.get(f"/api/agent-live/sessions/{session_id}/events")
+    payload = response.content.decode()
+    assert '"type": "agent_edits"' in payload
+    assert '"pmh": "agent"' in payload
 
 
 def test_stop_session_replays_final_state():
@@ -1553,6 +1646,120 @@ def test_request_tidy_refuses_ended_session():
     assert engine.request_tidy() is False
 
 
+def test_request_tidy_refuses_settled_session():
+    from server.agent_live.engine import LiveAgentEngine
+
+    session = _make_session()
+    session.tidy_settled = True
+    engine = LiveAgentEngine.__new__(LiveAgentEngine)
+    engine.session = session
+    engine._schedule_tick = lambda _reason: pytest.fail("should not schedule")
+    assert engine.request_tidy() is False
+
+
+def _tool_call_response(name, args):
+    return {
+        "message": {
+            "role": "assistant",
+            "content": "",
+            "tool_calls": [
+                {
+                    "id": "call-1",
+                    "type": "function",
+                    "function": {"name": name, "arguments": json.dumps(args)},
+                }
+            ],
+        }
+    }
+
+
+def _armed_engine():
+    from server.agent_live.engine import LiveAgentEngine
+
+    session = _make_session()
+    engine = LiveAgentEngine(session)
+    session.emit = AsyncMock()
+    engine._tools_definition = []
+    return session, engine
+
+
+@pytest.mark.asyncio
+async def test_tidy_tick_settles_when_note_unchanged():
+    session, engine = _armed_engine()
+    engine._chat = AsyncMock(return_value={"message": {"content": "no changes needed"}})
+
+    await engine._run_tick("tidy_tick")
+
+    assert session.tidy_settled is True
+    assert engine.request_tidy() is False
+
+
+@pytest.mark.asyncio
+async def test_tidy_tick_with_field_update_stays_armed():
+    session, engine = _armed_engine()
+    engine._chat = AsyncMock(
+        side_effect=[
+            _tool_call_response(
+                "update_note_field", {"field_key": "plan", "content": "1. GP review"}
+            ),
+            {"message": {"content": "consolidated plan"}},
+        ]
+    )
+
+    await engine._run_tick("tidy_tick")
+
+    assert session.tidy_settled is False
+    assert engine.request_tidy() is True
+
+    engine._chat = AsyncMock(return_value={"message": {"content": "no changes needed"}})
+    await engine._run_tick("tidy_tick")
+    assert session.tidy_settled is True
+    assert engine.request_tidy() is False
+
+
+@pytest.mark.asyncio
+async def test_regular_tick_field_edit_rearms_settled_tidy():
+    session, engine = _armed_engine()
+    session.tidy_settled = True
+    engine._chat = AsyncMock(
+        side_effect=[
+            _tool_call_response("append_to_field", {"field_key": "plan", "entry": "Book PET scan"}),
+            {"message": {"content": "captured"}},
+        ]
+    )
+
+    await engine._run_tick("NOTE")
+
+    assert session.tidy_settled is False
+    assert engine.request_tidy() is True
+
+
+@pytest.mark.asyncio
+async def test_regular_tick_without_field_edit_keeps_tidy_settled():
+    session, engine = _armed_engine()
+    session.tidy_settled = True
+    engine._chat = AsyncMock(return_value={"message": {"content": "nothing new"}})
+
+    await engine._run_tick("NOTE")
+
+    assert session.tidy_settled is True
+    assert engine.request_tidy() is False
+
+
+@pytest.mark.asyncio
+async def test_clinician_feedback_does_not_rearm_settled_tidy():
+    session = _make_session()
+    session_manager._sessions[session.id] = session
+    session.tidy_settled = True
+
+    body = agent_live_router.LiveFeedbackRequest(fields={"plan": "1. GP review"})
+    await agent_live_router.push_feedback(session.id, body, _fake_request())
+
+    assert session.field_drafts["plan"] == "1. GP review"
+    assert "plan" in session.user_touched
+    assert session.tidy_settled is True
+
+
 def test_tidy_endpoint_calls_engine():
     response = client.post(
         "/api/agent-live/sessions",
@@ -1708,7 +1915,7 @@ async def test_prewarm_primes_gate_and_agent_prompts():
     session = _make_session()
     engine = LiveAgentEngine.__new__(LiveAgentEngine)
     engine.session = session
-    engine._tools = lambda: [{"type": "function", "function": {"name": "noop"}}]
+    engine._tools_definition = [{"type": "function", "function": {"name": "noop"}}]
     engine._chat = AsyncMock(return_value={"message": {"content": "SKIP"}})
 
     await engine.prewarm()
@@ -1723,7 +1930,7 @@ async def test_prewarm_primes_gate_and_agent_prompts():
     assert agent_messages[0] is session.agent_messages[0]
     assert agent_messages[0]["role"] == "system"
     assert agent_messages[1]["role"] == "user"
-    assert agent_call.kwargs["tools"] == engine._tools()
+    assert agent_call.kwargs["tools"] == engine.tools()
     assert agent_call.kwargs["max_tokens"] == 1
 
 
@@ -1734,7 +1941,7 @@ async def test_prewarm_swallows_errors():
     session = _make_session()
     engine = LiveAgentEngine.__new__(LiveAgentEngine)
     engine.session = session
-    engine._tools = lambda: []
+    engine._tools_definition = []
     engine._chat = AsyncMock(side_effect=RuntimeError("no endpoint"))
 
     await engine.prewarm()
@@ -1774,3 +1981,184 @@ def test_tidy_transition_mentions_jobs_and_rewording():
     assert "just keep the 'email CDU' job" in message
     assert "make it tighter" in message
     assert "set_jobs" in message
+
+
+def test_tick_user_message_numbers_segments_with_absolute_indices():
+    from server.agent_live.engine import LiveAgentEngine
+
+    session = _make_session()
+    engine = LiveAgentEngine(session)
+    session.transcript_segments = ["S1: hello", "S2: chest pain", "S1: bye"]
+    session.segments_sent_to_agent = 1
+
+    message = engine._tick_user_message("NOTE")
+
+    assert "[1] S2: chest pain" in message
+    assert "[2] S1: bye" in message
+    # Already-sent segments are not repeated, and indices are absolute.
+    assert "[0] S1: hello" not in message
+
+
+def test_stop_citations_endpoint_returns_warm_turn_envelope(monkeypatch):
+    response = client.post(
+        "/api/agent-live/sessions",
+        json={"patient": {"name": "Test"}, "template_key": "phlox_01"},
+    )
+    session_id = response.json()["session_id"]
+    session = session_manager.get(session_id)
+    assert session is not None
+    session.engine = None  # stop() skips engine shutdown
+    session.agent_messages = [{"role": "system", "content": "sys"}]
+    session.transcript_segments = ["S1: a", "S2: b"]
+    session.field_drafts = {"clinical_history": "• Fatigue"}
+
+    async def fake_ground(agent_messages, template_fields, contents, transcript_line_count, **kwargs):
+        assert transcript_line_count == 2
+        # The stop snapshot passes the session-start baseline and (when the
+        # engine survives) its frozen tools; None engine -> no tools.
+        assert kwargs.get("tools") is None
+        assert kwargs.get("baseline_fields") == {}
+        from server.transcription.grounding import LineCitation
+
+        return {
+            "clinical_history": [
+                LineCitation(line_index=0, text="• Fatigue", sources=[0], verdict="supported")
+            ]
+        }
+
+    monkeypatch.setattr("server.transcription.grounding.ground_via_conversation", fake_ground)
+
+    stop = client.post(f"/api/agent-live/sessions/{session_id}/stop")
+    assert stop.status_code == 200
+    # Stop returns the final state immediately; grounding is lazy.
+    assert "citations" not in stop.json()
+
+    response = client.get(f"/api/agent-live/sessions/{session_id}/citations")
+    assert response.status_code == 200
+    body = response.json()
+    assert body["status"] == "ready"
+    assert body["citations"]["transcript_line_count"] == 2
+    assert body["citations"]["fields"]["clinical_history"][0]["sources"] == [0]
+
+
+def test_stop_citations_repeat_call_reuses_result(monkeypatch):
+    response = client.post(
+        "/api/agent-live/sessions",
+        json={"patient": {"name": "Test"}, "template_key": "phlox_01"},
+    )
+    session_id = response.json()["session_id"]
+    session = session_manager.get(session_id)
+    assert session is not None
+    session.engine = None
+    session.agent_messages = [{"role": "system", "content": "sys"}]
+    session.transcript_segments = ["S1: a"]
+    session.field_drafts = {"plan": "1. Review"}
+
+    calls = {"count": 0}
+
+    async def fake_ground(*_args, **_kwargs):
+        calls["count"] += 1
+        from server.transcription.grounding import LineCitation
+
+        return {"plan": [LineCitation(line_index=0, text="1. Review", sources=[], verdict="unverified")]}
+
+    monkeypatch.setattr("server.transcription.grounding.ground_via_conversation", fake_ground)
+
+    client.post(f"/api/agent-live/sessions/{session_id}/stop")
+    first = client.get(f"/api/agent-live/sessions/{session_id}/citations").json()
+    second = client.get(f"/api/agent-live/sessions/{session_id}/citations").json()
+    assert calls["count"] == 1
+    assert first == second
+    assert first["status"] == "ready"
+
+
+def test_stop_citations_endpoint_reports_failure(monkeypatch):
+    response = client.post(
+        "/api/agent-live/sessions",
+        json={"patient": {"name": "Test"}},
+    )
+    session_id = response.json()["session_id"]
+    session = session_manager.get(session_id)
+    assert session is not None
+    session.engine = None
+    session.agent_messages = [{"role": "system", "content": "sys"}]
+    session.transcript_segments = ["S1: a"]
+    session.field_drafts = {"plan": "1. Review"}
+
+    async def failing_ground(*_args, **_kwargs):
+        raise RuntimeError("model down")
+
+    monkeypatch.setattr("server.transcription.grounding.ground_via_conversation", failing_ground)
+
+    client.post(f"/api/agent-live/sessions/{session_id}/stop")
+    response = client.get(f"/api/agent-live/sessions/{session_id}/citations")
+    assert response.status_code == 200
+    assert response.json() == {"status": "failed"}
+
+
+def test_citations_before_stop_is_rejected():
+    response = client.post(
+        "/api/agent-live/sessions",
+        json={"patient": {"name": "Test"}},
+    )
+    session_id = response.json()["session_id"]
+    response = client.get(f"/api/agent-live/sessions/{session_id}/citations")
+    assert response.status_code == 409
+
+
+@pytest.mark.asyncio
+async def test_stop_waits_for_inflight_transcription():
+    session = _make_session()
+    session_manager._sessions[session.id] = session
+
+    async def slow_tail():
+        await asyncio.sleep(0.1)
+        session.transcript_segments.append("S1: tail line")
+
+    session.track_task(asyncio.create_task(slow_tail()))
+
+    result = await stop_session(session.id, _fake_request())
+    # The tail utterance landed before the final-state snapshot.
+    assert result["transcript"] == "S1: tail line"
+    # Repeat stop replays the cached final state unchanged.
+    assert await stop_session(session.id, _fake_request()) == result
+
+
+@pytest.mark.asyncio
+async def test_stop_snapshots_engine_tools_and_baseline():
+    session = _make_session()
+    session.field_drafts["plan"] = "1. Pre-existing"
+    session.initial_fields = dict(session.field_drafts)
+    session_manager._sessions[session.id] = session
+    sentinel_tools = [{"type": "function", "function": {"name": "noop"}}]
+    session.engine = SimpleNamespace(
+        stop=AsyncMock(),
+        tools=lambda: sentinel_tools,
+    )
+
+    await stop_session(session.id, _fake_request())
+
+    payload = session.citations_input
+    assert payload is not None
+    assert payload["tools"] is sentinel_tools
+    assert payload["baseline_fields"] == {"plan": "1. Pre-existing"}
+    assert payload["transcript_line_count"] == 0
+    session.engine.stop.assert_awaited_once()
+
+
+@pytest.mark.asyncio
+async def test_settle_tasks_cancels_stragglers():
+    session = _make_session()
+    cancelled = False
+
+    async def stuck():
+        nonlocal cancelled
+        try:
+            await asyncio.sleep(30)
+        except asyncio.CancelledError:
+            cancelled = True
+            raise
+
+    session.track_task(asyncio.create_task(stuck()))
+    await session.settle_tasks(timeout=0.05)
+    assert cancelled

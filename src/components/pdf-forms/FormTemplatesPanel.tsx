@@ -2,8 +2,8 @@
 import React, { useState, useEffect } from "react";
 import { Box, Text, VStack, HStack, NativeSelect, Flex } from "@chakra-ui/react";
 import { AddIcon } from "../common/icons";
-import { FaPencilAlt, FaMagic, FaSave, FaRegEye, FaRegEyeSlash } from "react-icons/fa";
-import { GreenButton, GreyButton } from "../common/Buttons";
+import { LuEye, LuEyeOff, LuPencil, LuSave, LuWandSparkles } from "react-icons/lu";
+import { PrimaryButton, SecondaryButton, SuccessButton } from "../common/Buttons";
 import FormTemplateList from "./FormTemplateList";
 import FormBuilder from "./FormBuilder";
 import FieldEditor from "./FieldEditor";
@@ -78,7 +78,7 @@ const FormTemplatesPanel = ({
         w="240px"
         flexShrink={0}
         borderRadius="sm"
-        className="panels-bg"
+        className="rag-panel"
         p="2"
         maxH="calc(100vh - 200px)"
         overflowY="auto"
@@ -87,9 +87,9 @@ const FormTemplatesPanel = ({
           <Text as="h4" fontSize="sm">
             {t("forms.forms")}
           </Text>
-          <GreyButton size="xs" leftIcon={<AddIcon />} onClick={onOpenUpload}>
+          <SecondaryButton size="xs" leftIcon={<AddIcon />} onClick={onOpenUpload}>
             {t("forms.new")}
-          </GreyButton>
+          </SecondaryButton>
         </Flex>
 
         <FormTemplateList
@@ -129,10 +129,10 @@ const FormTemplatesPanel = ({
             py="16"
             textAlign="center"
             border="1px dashed"
-            borderColor="border"
+            borderColor="folio.line"
             borderRadius="sm"
           >
-            <Text color="overlay0" fontSize="sm">
+            <Text color="folio.muted" fontSize="sm">
               {t("forms.selectTemplateHint")}
             </Text>
           </Box>
@@ -144,7 +144,7 @@ const FormTemplatesPanel = ({
         flexShrink={0}
         p="2"
         borderRadius="sm"
-        className="panels-bg"
+        className="rag-panel"
       >
         {/* New field controls */}
         {selectedTemplate && (
@@ -152,12 +152,12 @@ const FormTemplatesPanel = ({
             mb="3"
             pb="2"
             borderBottom="1px solid"
-            borderColor="border"
+            borderColor="folio.line"
           >
             {isDrawingMode ? (
               <VStack gap="2" align="stretch">
                 <HStack gap="1">
-                  <Box color="primaryButton" fontSize="0.7em" asChild><FaPencilAlt /></Box>
+                  <Box color="folio.info" fontSize="0.7em" asChild><LuPencil strokeWidth={1.6} /></Box>
                   <Text fontSize="xs" fontWeight="bold">
                     {t("forms.drawingMode")}
                   </Text>
@@ -174,45 +174,49 @@ const FormTemplatesPanel = ({
                   </NativeSelect.Field>
                   <NativeSelect.Indicator />
                 </NativeSelect.Root>
-                <GreyButton
+                <SecondaryButton
                   size="xs"
                   width="100%"
                   onClick={() => onSetDrawingMode(false)}
                 >
                   {t("forms.done")}
-                </GreyButton>
+                </SecondaryButton>
               </VStack>
             ) : (
               <VStack gap="2" align="stretch">
-                <GreyButton
+                <SecondaryButton
                   size="xs"
                   width="100%"
                   leftIcon={<AddIcon />}
                   onClick={() => onSetDrawingMode(true)}
                 >
                   {t("forms.newField")}
-                </GreyButton>
+                </SecondaryButton>
                 {visionCapable && (
-                  <GreyButton
+                  <SecondaryButton
                     size="xs"
                     width="100%"
-                    leftIcon={<FaMagic />}
+                    leftIcon={<LuWandSparkles strokeWidth={1.6} />}
                     onClick={onAutoDetect}
                     loading={detecting}
                     loadingText={t("forms.detecting")}
                   >
                     {t("forms.autoDetect")}
-                  </GreyButton>
+                  </SecondaryButton>
                 )}
-                <GreyButton
-                  size="xs"
-                  width="100%"
-                  leftIcon={previewOn ? <FaRegEyeSlash /> : <FaRegEye />}
-                  onClick={() => setPreviewOn(!previewOn)}
-                  colorPalette={previewOn ? "green" : undefined}
-                >
-                  {previewOn ? t("forms.hidePreview") : t("forms.previewFill")}
-                </GreyButton>
+                {(() => {
+                  const PreviewButton = previewOn ? SuccessButton : SecondaryButton;
+                  return (
+                    <PreviewButton
+                      size="xs"
+                      width="100%"
+                      leftIcon={previewOn ? <LuEyeOff strokeWidth={1.6} /> : <LuEye strokeWidth={1.6} />}
+                      onClick={() => setPreviewOn(!previewOn)}
+                    >
+                      {previewOn ? t("forms.hidePreview") : t("forms.previewFill")}
+                    </PreviewButton>
+                  );
+                })()}
               </VStack>
             )}
           </Box>
@@ -236,7 +240,7 @@ const FormTemplatesPanel = ({
         />
 
         {selectedTemplate && (
-          <Box mt="3" pt="2" borderTop="1px solid" borderColor="border">
+          <Box mt="3" pt="2" borderTop="1px solid" borderColor="folio.line">
             <Text fontSize="xs" fontWeight="bold" mb="1">
               {t("forms.fieldsCount", { number: fields.length })}
             </Text>
@@ -251,17 +255,17 @@ const FormTemplatesPanel = ({
         )}
 
         {selectedTemplate && (
-          <Box mt="3" pt="2" borderTop="1px solid" borderColor="border">
-            <GreenButton
+          <Box mt="3" pt="2" borderTop="1px solid" borderColor="folio.line">
+            <PrimaryButton
               size="xs"
               width="100%"
               onClick={onSaveFields}
               loading={saving}
               loadingText={t("forms.saving")}
-              leftIcon={saving ? null : <FaSave />}
+              leftIcon={saving ? null : <LuSave strokeWidth={1.6} />}
             >
               {saving ? t("forms.savingDots") : t("forms.saveFields")}
-            </GreenButton>
+            </PrimaryButton>
           </Box>
         )}
       </Box>

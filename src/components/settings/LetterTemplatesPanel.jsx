@@ -13,7 +13,7 @@ import { useTranslation } from "react-i18next";
 
 
 import { AddIcon, DeleteIcon, EditIcon } from "../common/icons";
-import { FaEnvelopeOpenText } from "react-icons/fa";
+import { LuMailOpen } from "react-icons/lu";
 import { Tooltip } from "@/components/ui/tooltip";
 import { useState, useEffect } from "react";
 import { settingsService } from "../../utils/settings/settingsUtils";
@@ -104,14 +104,14 @@ const LetterTemplatesPanel = () => {
     return (
         <VStack gap={3} align="stretch">
             <Flex justify="space-between" align="center">
-                <Text fontSize="xs" className="pill-box-icons" maxW="55%">
+                <Text fontSize="xs" className="settings-meta" maxW="55%">
                     {t("settings.letterTemplates.description")}
                 </Text>
                 <HStack>
                     <Button
                         onClick={handleReset}
                         size="sm"
-                        className="red-button"
+                        variant="folioDanger"
                     >
                         {t("settings.letterTemplates.resetToDefaults")}
                     </Button>
@@ -120,9 +120,8 @@ const LetterTemplatesPanel = () => {
                             setEditTemplate(null);
                             setIsEditing(true);
                         }}
-                        variant="outline"
                         size="sm"
-                        className="nav-button"
+                        variant="folioSecondary"
                     ><AddIcon />{t("settings.templates.newTemplate")}
                     </Button>
                 </HStack>
@@ -133,17 +132,17 @@ const LetterTemplatesPanel = () => {
                     p={6}
                     textAlign="center"
                     borderWidth="1px"
-                    borderColor="border"
+                    borderColor="folio.line"
                     borderRadius="md"
                 >
-                    <FaEnvelopeOpenText
+                    <LuMailOpen strokeWidth={1.6}
                         size="1.5em"
                         style={{ opacity: 0.5, marginBottom: "8px" }}
                     />
-                    <Text fontSize="sm" className="pill-box-icons">
+                    <Text fontSize="sm" className="settings-meta">
                         {t("settings.letterTemplates.emptyTitle")}
                     </Text>
-                    <Text fontSize="xs" className="pill-box-icons" mt={1}>
+                    <Text fontSize="xs" className="settings-meta" mt={1}>
                         {t("settings.letterTemplates.emptyDescription")}
                     </Text>
                 </Box>
@@ -156,12 +155,12 @@ const LetterTemplatesPanel = () => {
                                 key={template.id}
                                 p={3}
                                 borderWidth="1px"
-                                borderColor="border"
+                                borderColor="folio.line"
                                 borderRadius="md"
                             >
                                 <Flex justify="space-between" align="center">
                                     <HStack gap={3} align="flex-start">
-                                        <FaEnvelopeOpenText
+                                        <LuMailOpen strokeWidth={1.6}
                                             style={{
                                                 opacity: 0.5,
                                                 marginTop: "2px",
@@ -176,10 +175,15 @@ const LetterTemplatesPanel = () => {
                                                     {template.name}
                                                 </Text>
                                                 <Badge
-                                                    colorPalette={
+                                                    bg={
                                                         isDefault
-                                                            ? "green"
-                                                            : "gray"
+                                                            ? "folio.successSoft"
+                                                            : "folio.paperAlt"
+                                                    }
+                                                    color={
+                                                        isDefault
+                                                            ? "folio.success"
+                                                            : "folio.muted"
                                                     }
                                                     fontSize="xs"
                                                 >
@@ -191,7 +195,7 @@ const LetterTemplatesPanel = () => {
                                             {template.instructions && (
                                                 <Text
                                                     fontSize="xs"
-                                                    className="pill-box-icons"
+                                                    className="settings-meta"
                                                     mt={1}
                                                 >
                                                     {template.instructions}
@@ -216,7 +220,8 @@ const LetterTemplatesPanel = () => {
                                                 <IconButton
                                                     variant="ghost"
                                                     size="sm"
-                                                    colorPalette="red"
+                                                    color="folio.danger"
+                                                    _hover={{ bg: "folio.dangerSoft" }}
                                                     aria-label={t("settings.templates.deleteTemplate")}
                                                     onClick={() =>
                                                         handleDelete(

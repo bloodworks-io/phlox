@@ -3,7 +3,7 @@ import { screen, cleanup, fireEvent, waitFor } from "@testing-library/react";
 import FormFillArtifact, {
     downloadFormFillArtifact,
 } from "./FormFillArtifact";
-import { renderWithProviders } from "../../test/utils";
+import { renderWithProviders, emotionStylesFor } from "../../test/utils";
 import { pdfFormsApi } from "../../utils/api/pdfFormsApi";
 import { fillPdf } from "../../utils/pdf/fillForm";
 import { toaster } from "@/components/ui/toaster";
@@ -123,4 +123,26 @@ describe("FormFillArtifact", () => {
         const anchor = clickSpy.mock.instances[0];
         expect(anchor.download).toBe("Intake Form_filled.pdf");
     });
+
+    it("presents the artifact on Folio paper with a hairline border", () => {
+        renderWithProviders(<FormFillArtifact artifact={artifact} />);
+
+        const styles = emotionStylesFor(cardElement());
+        expect(styles).toContain("var(--chakra-colors-folio-paper)");
+        expect(styles).toContain("var(--chakra-colors-folio-line)");
+    });
+
+    it("tints the PDF icon through its container instead of an icon color prop", () => {
+        renderWithProviders(<FormFillArtifact artifact={artifact} />);
+
+        const svg = cardElement().querySelector("svg")!;
+        expect(svg.getAttribute("color")).toBeNull();
+        expect(emotionStylesFor(svg.parentElement!)).toContain(
+            "var(--chakra-colors-folio-faint)",
+        );
+    });
 });
+
+const cardElement = (): HTMLElement =>
+    screen.getByText("Intake Form_filled.pdf").closest("div")!
+        .parentElement!;

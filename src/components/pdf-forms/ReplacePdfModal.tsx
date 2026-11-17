@@ -4,7 +4,7 @@ import { Text, VStack, Box, Dialog, Portal } from "@chakra-ui/react";
 import { toaster } from "@/components/ui/toaster";
 import { pdfFormsApi } from "../../utils/api/pdfFormsApi";
 import { loadPdfDocument } from "../../utils/helpers/pdfVisionHelpers";
-import { GreenButton, GreyButton } from "../common/Buttons";
+import { PrimaryButton, SecondaryButton } from "../common/Buttons";
 import { useTranslation } from "react-i18next";
 import type { FormTemplate } from "./types";
 
@@ -112,7 +112,7 @@ const ReplacePdfModal = ({ isOpen, onClose, template, onReplaced }: ReplacePdfMo
       <Portal>
         <Dialog.Backdrop />
         <Dialog.Positioner>
-          <Dialog.Content>
+          <Dialog.Content className="modal-style">
             <Dialog.Header>
               <Text as="h3">{t("forms.replacePdf")}</Text>
             </Dialog.Header>
@@ -127,21 +127,21 @@ const ReplacePdfModal = ({ isOpen, onClose, template, onReplaced }: ReplacePdfMo
                     type="file"
                     accept=".pdf"
                     onChange={handleFileChange}
-                    style={{ display: "block", width: "100%", fontSize: "0.875rem" }}
+                    className="file-input-style"
                   />
                 </Box>
-                <Text fontSize="xs" color="overlay0">
+                <Text fontSize="xs" color="folio.muted">
                   {t("forms.replaceInstructions", { pages: expectedPages })}
                 </Text>
               </VStack>
             </Dialog.Body>
             <Dialog.Footer>
-              <GreyButton mr="3" onClick={handleClose}>
+              <SecondaryButton mr="3" onClick={handleClose}>
                 {t("action.cancel")}
-              </GreyButton>
-              <GreenButton onClick={handleSubmit} loading={uploading} disabled={!file}>
+              </SecondaryButton>
+              <PrimaryButton onClick={handleSubmit} loading={uploading} disabled={!file}>
                 {t("forms.replace")}
-              </GreenButton>
+              </PrimaryButton>
             </Dialog.Footer>
           </Dialog.Content>
         </Dialog.Positioner>

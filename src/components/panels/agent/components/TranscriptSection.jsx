@@ -34,7 +34,7 @@ export const TranscriptSection = ({ transcripts }) => {
             pr={1}
         >
             {transcripts.length === 0 ? (
-                <Text fontSize="xs" fontStyle="italic" color="overlay0">
+                <Text fontSize="xs" fontStyle="italic" color="folio.faint">
                     {t("agent.transcript.waiting")}
                 </Text>
             ) : (
@@ -55,7 +55,7 @@ const Caption = ({ text, isRecent }) => {
             mb={1.5}
             fontSize="xs"
             lineHeight="1.5"
-            color={isRecent ? "fg.muted" : "fg.subtle"}
+            color={isRecent ? "folio.ink" : "folio.muted"}
             className="anim-fade-slide-up"
             css={{ animationDuration: "0.15s" }}
         >

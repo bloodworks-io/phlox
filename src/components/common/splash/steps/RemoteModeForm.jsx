@@ -39,14 +39,14 @@ export const RemoteModeForm = ({
     >
       <Field.Root>
         <HStack>
-          <Field.Label fontSize="sm" color="textSecondary">
+          <Field.Label fontSize="sm" color="folio.muted">
             {t("splash.remote.apiUrl")}
           </Field.Label>
           <Tooltip
             content={t("splash.remote.apiUrlTooltip")}
             showArrow
           >
-            <InfoIcon boxSize={3} color="textSecondary" />
+            <InfoIcon boxSize={3} color="folio.muted" />
           </Tooltip>
         </HStack>
         <Input
@@ -60,14 +60,14 @@ export const RemoteModeForm = ({
 
       <Field.Root>
         <HStack>
-          <Field.Label fontSize="sm" color="textSecondary">
+          <Field.Label fontSize="sm" color="folio.muted">
             {t("splash.remote.apiKey")}
           </Field.Label>
           <Tooltip
             content={t("splash.remote.apiKeyTooltip")}
             showArrow
           >
-            <InfoIcon boxSize={3} color="textSecondary" />
+            <InfoIcon boxSize={3} color="folio.muted" />
           </Tooltip>
         </HStack>
         <Input
@@ -82,14 +82,14 @@ export const RemoteModeForm = ({
 
       <Field.Root required={availableModels.length > 0}>
         <HStack>
-          <Field.Label fontSize="sm" color="textSecondary">
+          <Field.Label fontSize="sm" color="folio.muted">
             {t("splash.remote.primaryModel")}
           </Field.Label>
           <Tooltip
             content={t("splash.remote.primaryModelTooltip")}
             showArrow
           >
-            <InfoIcon boxSize={3} color="textSecondary" />
+            <InfoIcon boxSize={3} color="folio.muted" />
           </Tooltip>
         </HStack>
         <NativeSelect.Root>
@@ -115,8 +115,8 @@ export const RemoteModeForm = ({
         </NativeSelect.Root>
         {isFetchingLLMModels && (
           <HStack gap={2} mt={2}>
-            <Spinner size="xs" color="primaryButton" />
-            <Text fontSize="sm" color="textSecondary">
+            <Spinner size="xs" color="folio.accent" />
+            <Text fontSize="sm" color="folio.muted">
               {t("splash.remote.loadingModels")}
             </Text>
           </HStack>
@@ -125,11 +125,11 @@ export const RemoteModeForm = ({
 
       {/* Transcription settings — always visible */}
       <VStack gap={2} w="100%" align="stretch">
-        <Text fontSize="xs" fontWeight="bold" className="pill-box-icons">
+        <Text fontSize="xs" fontWeight="bold" className="settings-meta">
           {t("splash.step.aiModels.transcription")}
         </Text>
         <Field.Root>
-          <Field.Label fontSize="sm" color="textSecondary">
+          <Field.Label fontSize="sm" color="folio.muted">
             {t("splash.remote.whisperUrl")}
           </Field.Label>
           <Input
@@ -142,7 +142,7 @@ export const RemoteModeForm = ({
         </Field.Root>
         {whisperBaseUrl.trim() && (
           <Field.Root>
-            <Field.Label fontSize="sm" color="textSecondary">
+            <Field.Label fontSize="sm" color="folio.muted">
               {t("splash.remote.whisperModel")}
             </Field.Label>
             {whisperModelListAvailable &&
@@ -176,8 +176,8 @@ export const RemoteModeForm = ({
             )}
             {isFetchingWhisperModels && (
               <HStack gap={2} mt={2}>
-                <Spinner size="xs" color="primaryButton" />
-                <Text fontSize="sm" color="textSecondary">
+                <Spinner size="xs" color="folio.accent" />
+                <Text fontSize="sm" color="folio.muted">
                   {t("splash.remote.loading")}
                 </Text>
               </HStack>

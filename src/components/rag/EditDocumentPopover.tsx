@@ -7,11 +7,11 @@ import {
     Popover,
     Input,
     VStack,
-    Button,
 } from "@chakra-ui/react";
+import { PrimaryButton, SecondaryButton } from "../common/Buttons";
 import { toaster } from "@/components/ui/toaster";
 import { EditIcon } from "../common/icons";
-import { FaTimes } from "react-icons/fa";
+import { LuX } from "react-icons/lu";
 import { ragApi } from "../../utils/api/ragApi";
 import { useTranslation } from "react-i18next";
 import type { RagFileObject } from "./types";
@@ -78,7 +78,8 @@ export const EditDocumentPopover = ({ collectionName, file, onSaved }: EditDocum
                     aria-label={t("rag.editDocument")}
                     size="xs"
                     variant="ghost"
-                    colorPalette="blue"
+                    color="folio.info"
+                    _hover={{ bg: "folio.infoSoft" }}
                     mr="1"
                 >
                     <EditIcon />
@@ -99,7 +100,7 @@ export const EditDocumentPopover = ({ collectionName, file, onSaved }: EditDocum
                             as="span"
                             fontSize="sm"
                             fontWeight="600"
-                            color="textPrimary"
+                            color="folio.ink"
                             lineHeight="1.2"
                             flex="1"
                         >
@@ -112,7 +113,7 @@ export const EditDocumentPopover = ({ collectionName, file, onSaved }: EditDocum
                             border="none"
                             cursor="pointer"
                             padding="2px"
-                            color="textSecondary"
+                            color="folio.muted"
                             opacity={0.6}
                             _hover={{ opacity: 1 }}
                             aria-label={t("action.close")}
@@ -121,7 +122,7 @@ export const EditDocumentPopover = ({ collectionName, file, onSaved }: EditDocum
                             alignItems="center"
                             lineHeight="1"
                         >
-                            <FaTimes size={12} />
+                            <LuX size={12} strokeWidth={1.6} />
                         </Box>
                     </Popover.Header>
                     <Popover.Body>
@@ -130,7 +131,7 @@ export const EditDocumentPopover = ({ collectionName, file, onSaved }: EditDocum
                                 <Text
                                     fontSize="xs"
                                     mb={1}
-                                    color="textSecondary"
+                                    color="folio.muted"
                                 >
                                     {t("rag.title")}
                                 </Text>
@@ -146,7 +147,7 @@ export const EditDocumentPopover = ({ collectionName, file, onSaved }: EditDocum
                                 <Text
                                     fontSize="xs"
                                     mb={1}
-                                    color="textSecondary"
+                                    color="folio.muted"
                                 >
                                     {t("rag.source")}
                                 </Text>
@@ -162,7 +163,7 @@ export const EditDocumentPopover = ({ collectionName, file, onSaved }: EditDocum
                                 <Text
                                     fontSize="xs"
                                     mb={1}
-                                    color="textSecondary"
+                                    color="folio.muted"
                                 >
                                     {t("rag.focusAreaInline")}
                                 </Text>
@@ -189,23 +190,21 @@ export const EditDocumentPopover = ({ collectionName, file, onSaved }: EditDocum
                         p={2}
                         gap={2}
                         borderTop="1px solid"
-                        borderColor="surface"
+                        borderColor="folio.line"
                     >
-                        <Button
+                        <SecondaryButton
                             size="xs"
-                            variant="ghost"
                             onClick={() => setOpen(false)}
                         >
                             {t("action.cancel")}
-                        </Button>
-                        <Button
+                        </SecondaryButton>
+                        <PrimaryButton
                             size="xs"
-                            className="green-button"
                             loading={saving}
                             onClick={handleSave}
                         >
                             {t("action.save")}
-                        </Button>
+                        </PrimaryButton>
                     </Flex>
                 </Popover.Content>
             </Popover.Positioner>

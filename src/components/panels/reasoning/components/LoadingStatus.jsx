@@ -1,27 +1,27 @@
 import React from "react";
 import { Flex, Spinner, Text, VStack } from "@chakra-ui/react";
 import {
-    FaWikipediaW,
-    FaBookMedical,
-    FaHistory,
-    FaDatabase,
-    FaCog,
-} from "react-icons/fa";
+    LuBookOpen,
+    LuBriefcaseMedical,
+    LuCog,
+    LuDatabase,
+    LuHistory,
+} from "react-icons/lu";
 
 const getStatusIcon = (status) => {
     const lower = status.toLowerCase();
     if (lower.includes("wikipedia") || lower.includes("wiki"))
-        return FaWikipediaW;
+        return LuBookOpen;
     if (lower.includes("pubmed") || lower.includes("literature"))
-        return FaBookMedical;
+        return LuBriefcaseMedical;
     if (lower.includes("encounter"))
-        return FaHistory;
+        return LuHistory;
     if (lower.includes("guideline"))
-        return FaDatabase;
-    return FaCog; // Default / general
+        return LuDatabase;
+    return LuCog; // Default / general
 };
 
-export const LoadingStatus = ({ status, colorMode }) => {
+export const LoadingStatus = ({ status }) => {
     if (!status) return null;
 
     const icon = getStatusIcon(status);
@@ -36,25 +36,23 @@ export const LoadingStatus = ({ status, colorMode }) => {
             justify="center"
             align="center"
             zIndex={2}
-            bg={
-                colorMode === "light"
-                    ? "rgba(255,255,255,0.9)"
-                    : "rgba(0,0,0,0.7)"
-            }
+            bg="folio.paper/90"
             flexDirection="column"
             gap={4}
             className="anim-fade-scale"
             css={{ animationDuration: "0.2s" }}
         >
             <VStack gap={4}>
-                <Spinner size="lg" color="secondaryButton" borderWidth="3px" />
+                <Spinner size="lg" color="folio.accent" borderWidth="3px" />
                 <Flex align="center" gap={3}>
-                    {React.createElement(icon, { size: "1.2em", color: "overlay0" })}
+                    {React.createElement(icon, {
+                        size: "1.2em",
+                        color: "var(--chakra-colors-folio-faint)",
+                    })}
                     <Text
                         fontSize="sm"
                         fontWeight="medium"
-                        color="textPrimary"
-                        _dark={{ color: "textTertiary" }}
+                        color="folio.ink"
                     >
                         {status}
                     </Text>
@@ -64,7 +62,7 @@ export const LoadingStatus = ({ status, colorMode }) => {
     );
 };
 
-export const LoadingOverlay = ({ colorMode }) => {
+export const LoadingOverlay = () => {
     return (
         <Flex
             position="absolute"
@@ -75,13 +73,9 @@ export const LoadingOverlay = ({ colorMode }) => {
             justify="center"
             align="center"
             zIndex={2}
-            bg={
-                colorMode === "light"
-                    ? "rgba(255,255,255,0.7)"
-                    : "rgba(0,0,0,0.5)"
-            }
+            bg="folio.paper/70"
         >
-            <Spinner size="lg" />
+            <Spinner size="lg" color="folio.accent" borderWidth="3px" />
         </Flex>
     );
 };

@@ -1,15 +1,97 @@
 "use client"
 
-import type { Steps, IconButtonProps, SpanProps } from "@chakra-ui/react";
+import type { IconButtonProps, SpanProps } from "@chakra-ui/react"
 import { ClientOnly, IconButton, Skeleton, Span } from "@chakra-ui/react"
+import { invoke } from "@tauri-apps/api/core"
 import { ThemeProvider, useTheme } from "next-themes"
 import type { ThemeProviderProps } from "next-themes"
 import * as React from "react"
 import { LuMoon, LuSun } from "react-icons/lu"
+import { isTauri } from "@/utils/helpers/apiConfig"
 
 export interface ColorModeProviderProps extends ThemeProviderProps {}
 
-export function ColorModeProvider(props: ColorModeProviderProps) {
+export type ColorMode = "light" | "dark"
+export type ThemePreference = "light" | "dark" | "system"
+
+const normalizeThemePreference = (value: string | undefined): ThemePreference => {
+  if (value === "light" || value === "dark" || value === "system") {
+    return value
+  }
+  return "system"
+}
+
+const applyEffectiveTheme = (
+  preference: ThemePreference,
+  effectiveTheme: ColorMode,
+) => {
+  const root = document.documentElement
+  const canvas = effectiveTheme === "dark" ? "#262b25" : "#f3f0e9"
+  const meta = document.querySelector('meta[name="theme-color"]')
+
+  root.classList.remove("light", "dark")
+  root.classList.add(effectiveTheme)
+  root.dataset.themePreference = preference
+  root.dataset.effectiveTheme = effectiveTheme
+  root.style.colorScheme = effectiveTheme
+  root.style.background = canvas
+
+  if (meta) {
+    meta.setAttribute("content", canvas)
+  }
+}
+
+const EffectiveThemeCoordinator = () => {
+  const { theme, resolvedTheme } = useTheme()
+  const preference = normalizeThemePreference(theme)
+  const effectiveTheme: ColorMode = resolvedTheme === "dark" ? "dark" : "light"
+  const revealedWindowRef = React.useRef(false)
+
+  React.useEffect(() => {
+    applyEffectiveTheme(preference, effectiveTheme)
+
+    if (!isTauri()) {
+      return
+    }
+
+    let cancelled = false
+
+    const synchronizeNativeTheme = async () => {
+      try {
+        await invoke("set_window_appearance", {
+          preference,
+          effective: effectiveTheme,
+        })
+      } catch (error) {
+        console.error("Failed to synchronize native theme:", error)
+      }
+
+      if (cancelled || revealedWindowRef.current) {
+        return
+      }
+
+      revealedWindowRef.current = true
+      try {
+        await invoke("reveal_main_window")
+      } catch (error) {
+        console.error("Failed to reveal main window:", error)
+      }
+    }
+
+    void synchronizeNativeTheme()
+
+    return () => {
+      cancelled = true
+    }
+  }, [preference, effectiveTheme])
+
+  return null
+}
+
+export function ColorModeProvider({
+  children,
+  ...props
+}: ColorModeProviderProps) {
   return (
     <ThemeProvider
       attribute="class"
@@ -17,11 +99,12 @@ export function ColorModeProvider(props: ColorModeProviderProps) {
       defaultTheme="system"
       enableSystem
       {...props}
-    />
+    >
+      <EffectiveThemeCoordinator />
+      {children}
+    </ThemeProvider>
   )
 }
-
-export type ColorMode = "light" | "dark"
 
 export interface UseColorModeReturn {
   colorMode: ColorMode
@@ -39,6 +122,19 @@ export function useColorMode(): UseColorModeReturn {
     colorMode: colorMode as ColorMode,
     setColorMode: setTheme,
     toggleColorMode,
+  }
+}
+
+export interface UseThemePreferenceReturn {
+  themePreference: ThemePreference
+  setThemePreference: (preference: ThemePreference) => void
+}
+
+export function useThemePreference(): UseThemePreferenceReturn {
+  const { theme, setTheme } = useTheme()
+  return {
+    themePreference: normalizeThemePreference(theme),
+    setThemePreference: setTheme,
   }
 }
 

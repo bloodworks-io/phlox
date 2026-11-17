@@ -10,6 +10,8 @@ export const KEYS = {
     incompleteJobsCount: (scope) => ["incompleteJobsCount", scope ?? "all"],
     TODOS: ["todos"],
     TOOL_SERVERS: ["toolServers"],
+    COMPANION_STATUS: ["companionStatus"],
+    COMPANION_SESSIONS: ["companionSessions"],
 
     noteList: (date, detailed = true, scope) => ["noteList", date, detailed, scope ?? "all"],
     scribeConsent: (urNumber) => ["scribeConsent", urNumber],

@@ -10,6 +10,7 @@ sessions are owned by the creating user in multi-user deployments):
   POST /sessions/{sid}/tidy           request a one-off note-consolidation tick
   POST /sessions/{sid}/mode           switch mode (live -> tidy)
   POST /sessions/{sid}/stop           end the session, return final state
+  GET  /sessions/{sid}/citations      await (lazily start) stop-time grounding
 """
 
 import asyncio
@@ -33,6 +34,10 @@ SSE_KEEPALIVE_SECONDS = 15
 
 # Covers slow prefill and cold model loads without blocking session creation.
 PREWARM_TIMEOUT_SECONDS = 60
+
+AUDIO_DRAIN_SECONDS = 15
+
+CITATIONS_WAIT_SECONDS = 240
 
 
 class LiveStartRequest(BaseModel):
@@ -79,6 +84,8 @@ def _final_state(session: LiveSession) -> dict:
         "session_id": session.id,
         "mode": session.mode,
         "fields": dict(session.field_drafts),
+        "agent_edits": dict(session.field_last_editor),
+        "initial_fields": dict(session.initial_fields),
         "transcript": "\n".join(session.transcript_segments),
         "artifacts": list(session.staged_artifacts),
         "jobs": list(session.staged_jobs),
@@ -149,6 +156,8 @@ async def stream_events(session_id: str, request: Request):
             for key, content in session.field_drafts.items():
                 # Replay as field_state so reconnect catch-up doesn't flash every field.
                 yield f"data: {json.dumps({'type': 'field_state', 'field_key': key, 'content': content})}\n\n"
+            if session.field_last_editor:
+                yield f"data: {json.dumps({'type': 'agent_edits', 'fields': session.field_last_editor})}\n\n"
             for artifact in session.staged_artifacts:
                 yield f"data: {json.dumps({'type': 'artifact_staged', 'artifact': artifact})}\n\n"
             if session.mode == "tidy":
@@ -185,6 +194,7 @@ async def push_feedback(session_id: str, body: LiveFeedbackRequest, request: Req
             if content != session.field_drafts.get(key):
                 session.field_drafts[key] = content
                 session.user_touched.add(key)
+                session.field_last_editor[key] = "clinician"
     return {"ok": True}
 
 
@@ -223,6 +233,8 @@ async def set_mode(session_id: str, body: LiveModeRequest, request: Request):
 @router.post("/sessions/{session_id}/stop")
 async def stop_session(session_id: str, request: Request):
     session = _get_owned_session(session_id, request)
+    if session.stop_result is not None:
+        return session.stop_result
     async with session.state_lock:
         already_ended = session.is_ended
         session.end()
@@ -230,7 +242,81 @@ async def stop_session(session_id: str, request: Request):
     # mutate fields after (or during) the final-state read.
     if session.engine is not None:
         await session.engine.stop()
+    # Let the flushed tail utterance finish transcribing so the final
+    # transcript (and its line count) is complete before the snapshot.
+    await session.settle_tasks()
     if not already_ended:
         await session.emit({"type": "end"})
         logger.info("Live session %s stopped", session.id)
-    return _final_state(session)
+    # Grounding inputs are snapshotted here; the warm turn itself runs
+    # lazily off the citations endpoint so stop returns immediately.
+    try:
+        tools = session.engine.tools() if session.engine is not None else None
+    except Exception as exc:
+        logger.warning("Live session %s: tools snapshot failed (%s)", session.id, exc)
+        tools = None
+    session.citations_input = {
+        "agent_messages": list(session.agent_messages),
+        "template_fields": session.template_fields,
+        "fields": dict(session.field_drafts),
+        "baseline_fields": dict(session.initial_fields),
+        "transcript_line_count": len(session.transcript_segments),
+        "tools": tools,
+    }
+    session.stop_result = _final_state(session)
+    return session.stop_result
+
+
+async def _ground_citations(session: LiveSession) -> None:
+    """Run the warm grounding turn and store the ready/failed result."""
+    result = {"status": "failed"}
+    payload = session.citations_input or {}
+    try:
+        from server.schemas.templates import TemplateField
+        from server.transcription.grounding import ground_via_conversation
+
+        template_fields = [
+            field if isinstance(field, TemplateField) else TemplateField(**field)
+            for field in payload.get("template_fields") or []
+        ]
+        citations = await ground_via_conversation(
+            payload.get("agent_messages") or [],
+            template_fields,
+            payload.get("fields") or {},
+            transcript_line_count=int(payload.get("transcript_line_count") or 0),
+            tools=payload.get("tools"),
+            baseline_fields=payload.get("baseline_fields"),
+        )
+        if citations:
+            result = {
+                "status": "ready",
+                "citations": {
+                    "transcript_line_count": int(payload.get("transcript_line_count") or 0),
+                    "resolved": [],
+                    "fields": {
+                        key: [citation.model_dump() for citation in lines]
+                        for key, lines in citations.items()
+                    },
+                },
+            }
+    except Exception as exc:
+        logger.warning("Live session %s: stop grounding skipped (%s)", session.id, exc)
+    session.citations_result = result
+
+
+@router.get("/sessions/{session_id}/citations")
+async def get_citations(session_id: str, request: Request):
+    """Await (or start) the stop-time grounding turn for an ended session."""
+    session = _get_owned_session(session_id, request)
+    if session.stop_result is None:
+        raise HTTPException(status_code=409, detail="Stop the session before requesting citations")
+    if session.citations_result is not None:
+        return session.citations_result
+    if session.citations_task is None:
+        session.citations_task = asyncio.create_task(_ground_citations(session))
+        session.track_task(session.citations_task)
+    try:
+        await asyncio.wait_for(asyncio.shield(session.citations_task), CITATIONS_WAIT_SECONDS)
+    except TimeoutError:
+        return {"status": "pending"}
+    return session.citations_result or {"status": "failed"}

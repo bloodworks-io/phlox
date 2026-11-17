@@ -1,6 +1,7 @@
 // Component for bulk uploading and vectorizing multiple PDF documents.
 import React, { useState, useRef } from "react";
-import { Field, Box, Text, Flex, HStack, VStack, Input, Button, IconButton, Collapsible, Spinner } from "@chakra-ui/react";
+import { Field, Box, Text, Flex, HStack, VStack, Input, IconButton, Collapsible, Spinner } from "@chakra-ui/react";
+import { PrimaryButton, SecondaryButton } from "../common/Buttons";
 import { toaster } from "@/components/ui/toaster";
 import {
     ChevronDownIcon,
@@ -8,7 +9,7 @@ import {
     CheckIcon,
     WarningIcon,
 } from "../common/icons";
-import { FaFilePdf, FaCloudUploadAlt } from "react-icons/fa";
+import { LuCloudUpload, LuFileText } from "react-icons/lu";
 import { useBulkUploadQueue, STATUS } from "../../utils/hooks/useBulkUploadQueue";
 import { filterPdfFiles } from "./utils";
 import { useTranslation } from "react-i18next";
@@ -23,11 +24,11 @@ const StatusIcon = ({ status }: { status: string }) => {
         case STATUS.COMMITTING:
             return <Spinner size="xs" mr="2" />;
         case STATUS.EXTRACTED:
-            return <CheckIcon color="successButton" mr="2" boxSize={3} />;
+            return <CheckIcon color="folio.success" mr="2" boxSize={3} />;
         case STATUS.COMMITTED:
             return (
                 <CheckIcon
-                    color="successButton"
+                    color="folio.success"
                     mr="2"
                     boxSize={3}
                     className="anim-fade-scale"
@@ -35,7 +36,7 @@ const StatusIcon = ({ status }: { status: string }) => {
                 />
             );
         case STATUS.FAILED:
-            return <WarningIcon color="dangerButton" mr="2" boxSize={3} />;
+            return <WarningIcon color="folio.danger" mr="2" boxSize={3} />;
         default:
             return null;
     }
@@ -139,25 +140,28 @@ const BulkUploader = ({ setCollections }: BulkUploaderProps) => {
             {/* Drop zone */}
             <Box
                         border="2px dashed"
-                        borderColor={isDragOver ? "accent" : "border"}
+                        borderColor={isDragOver ? "folio.accent" : "folio.line"}
                         borderRadius="md"
                         p="6"
                         textAlign="center"
                         cursor="pointer"
-                        bg={isDragOver ? "surfaceMuted" : "transparent"}
-                        _hover={{ borderColor: "border" }}
+                        bg={isDragOver ? "folio.accentSoft" : "transparent"}
+                        _hover={{ borderColor: "folio.line" }}
                         onDragOver={handleDragOver}
                         onDragLeave={handleDragLeave}
                         onDrop={handleDrop}
                         onClick={() => fileInputRef.current?.click()}
                         transition="all 0.2s"
                     >
-                        <FaCloudUploadAlt
-                            size="2em"
-                            color={isDragOver ? "#3182ce" : "#a0aec0"}
-                            style={{ margin: "0 auto 8px" }}
-                        />
-                        <Text fontSize="sm" color="overlay0">
+                        <Box
+                            asChild
+                            fontSize="2em"
+                            mb="2"
+                            color={isDragOver ? "folio.accent" : "folio.faint"}
+                        >
+                            <LuCloudUpload strokeWidth={1.6} />
+                        </Box>
+                        <Text fontSize="sm" color="folio.muted">
                             {t("rag.dropZoneHint")}
                         </Text>
                         <Input
@@ -182,10 +186,10 @@ const BulkUploader = ({ setCollections }: BulkUploaderProps) => {
                                 alignItems="center"
                                 p="2"
                                 borderRadius="sm"
-                                className="documentExplorer-style"
-                                _hover={{ bg: "surfaceMuted" }}
+                                className="rag-row"
+                                _hover={{ bg: "folio.hover" }}
                             >
-                                <Box mr="2" color="dangerButton" asChild><FaFilePdf /></Box>
+                                <Box mr="2" color="folio.info" asChild><LuFileText strokeWidth={1.6} /></Box>
                                 <Text
                                     fontSize="sm"
                                     fontWeight="medium"
@@ -200,8 +204,8 @@ const BulkUploader = ({ setCollections }: BulkUploaderProps) => {
                                     fontSize="xs"
                                     color={
                                         entry.status === STATUS.FAILED
-                                            ? "dangerButton"
-                                            : "overlay0"
+                                            ? "folio.danger"
+                                            : "folio.faint"
                                     }
                                     mr="2"
                                 >
@@ -230,7 +234,8 @@ const BulkUploader = ({ setCollections }: BulkUploaderProps) => {
                                             aria-label={t("rag.removeFromQueue")}
                                             size="xs"
                                             variant="ghost"
-                                            colorPalette="red"
+                                            color="folio.danger"
+                                            _hover={{ bg: "folio.dangerSoft" }}
                                             onClick={(e) => {
                                                 e.stopPropagation();
                                                 removeFromQueue(
@@ -253,7 +258,7 @@ const BulkUploader = ({ setCollections }: BulkUploaderProps) => {
                                                 align="stretch"
                                                 pl="8"
                                                 py="2"
-                                                className="filelist-style"
+                                                className="rag-file-list"
                                             >
                                                 <Field.Root>
                                                 <Field.Label
@@ -340,7 +345,7 @@ const BulkUploader = ({ setCollections }: BulkUploaderProps) => {
                     wrap="wrap"
                     gap="2"
                 >
-                    <Text fontSize="xs" color="overlay0">
+                    <Text fontSize="xs" color="folio.muted">
                         {t("rag.queueSummary", {
                             pending: totalPending,
                             ready: readyToCommit,
@@ -348,7 +353,7 @@ const BulkUploader = ({ setCollections }: BulkUploaderProps) => {
                         })}
                     </Text>
                     <HStack>
-                        <Button
+                        <SecondaryButton
                             onClick={extractAll}
                             disabled={
                                 !hasPendingOrFailed || isProcessing
@@ -356,9 +361,10 @@ const BulkUploader = ({ setCollections }: BulkUploaderProps) => {
                             loading={isProcessing && extractedCount === 0}
                             loadingText={t("rag.status.extracting")}
                             size="sm"
-                            className="orange-button"><CheckIcon />{t("rag.extractAll")}
-                                                    </Button>
-                        <Button
+                        >
+                            <CheckIcon />{t("rag.extractAll")}
+                        </SecondaryButton>
+                        <PrimaryButton
                             onClick={commitAll}
                             disabled={
                                 readyToCommit === 0 || isProcessing
@@ -368,8 +374,9 @@ const BulkUploader = ({ setCollections }: BulkUploaderProps) => {
                             }
                             loadingText={t("rag.status.committing")}
                             size="sm"
-                            className="green-button"><CheckIcon />{t("rag.commitAll")}
-                                                    </Button>
+                        >
+                            <CheckIcon />{t("rag.commitAll")}
+                        </PrimaryButton>
                     </HStack>
                 </Flex>
             )}

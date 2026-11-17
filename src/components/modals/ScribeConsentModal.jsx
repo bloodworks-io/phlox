@@ -63,7 +63,7 @@ const ScribeConsentModal = ({
                             <HStack justify="flex-end" width="100%">
                                 {hasDeclined ? (
                                     <Button
-                                        className="red-button"
+                                        variant="folioSecondary"
                                         mr={3}
                                         onClick={onClose}
                                     >
@@ -71,14 +71,14 @@ const ScribeConsentModal = ({
                                     </Button>
                                 ) : (
                                     <Button
-                                        className="red-button"
+                                        variant="folioSecondary"
                                         mr={3}
                                         onClick={onDecline}
                                     >
                                         {t("modal.scribeConsent.decline")}
                                     </Button>
                                 )}
-                                <Button className="green-button" onClick={onConsent}>
+                                <Button variant="folioPrimary" onClick={onConsent}>
                                     {hasDeclined ? t("modal.scribeConsent.reRequest") : t("modal.scribeConsent.consent")}
                                 </Button>
                             </HStack>

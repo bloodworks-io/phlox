@@ -33,7 +33,6 @@ const PillBox = ({
       top={top}
       transform={transform}
       zIndex={zIndex}
-      backdropFilter="blur(10px)"
       borderRadius="full"
       px={px}
       py={py}

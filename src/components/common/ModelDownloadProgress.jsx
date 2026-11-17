@@ -8,10 +8,10 @@ export const ModelDownloadProgress = ({ progress }) => {
 
   return (
     <Box>
-      <Text fontSize="xs" color="textTertiary" mb={1}>
+      <Text fontSize="xs" color="folio.muted" mb={1}>
         {Math.round(percentage)}%
       </Text>
-      <Progress.Root value={percentage} colorPalette="blue" size="sm" striped animated>
+      <Progress.Root value={percentage} variant="folio" size="sm" striped animated>
         <Progress.Track>
           <Progress.Range />
         </Progress.Track>

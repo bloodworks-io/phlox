@@ -251,3 +251,38 @@ def test_scribe_consent_targeted_upsert_preserves_demographics_db():
     consent = get_scribe_consent(ur)
     assert consent is not None
     assert consent["scribe_consent_at"] is not None
+
+
+def test_ground_note_returns_envelope(monkeypatch):
+    from server.transcription.grounding import LineCitation
+
+    calls = {}
+
+    async def fake_ground_note(
+        template_fields, contents, transcript_text, patient_context, **kwargs
+    ):
+        calls["include_persistent"] = kwargs.get("include_persistent")
+        calls["transcript"] = transcript_text
+        return {
+            "plan": [LineCitation(line_index=0, text="• Bloods", sources=[1], verdict="supported")],
+            "pmh": [LineCitation(line_index=0, text="• HTN", contradicts=[2], verdict="conflict")],
+        }
+
+    monkeypatch.setattr("server.api.patient.ground_note", fake_ground_note)
+
+    response = client.post(
+        "/api/note/ground",
+        json={
+            "fields": {"plan": "• Bloods", "pmh": "• HTN"},
+            "raw_transcription": "a\nb\nc",
+            "include_persistent": True,
+        },
+    )
+    assert response.status_code == 200
+    body = response.json()
+    assert body["transcript_line_count"] == 3
+    assert body["resolved"] == []
+    assert body["fields"]["plan"][0]["sources"] == [1]
+    assert body["fields"]["pmh"][0]["verdict"] == "conflict"
+    assert calls["include_persistent"] is True
+    assert calls["transcript"] == "a\nb\nc"

@@ -252,3 +252,15 @@ def test_real_model_separates_fixture_speakers():
     assert a_again == "S1", "same fixture voice should match its centroid"
     assert b == "S2", "different fixture voice should mint a new label"
     assert registry.speaker_count == 2
+
+
+def test_sanitize_utterance_collapses_all_whitespace():
+    assert speakers.sanitize_utterance("a\nb\r\nc  d\te") == "a b c d e"
+    assert speakers.sanitize_utterance("  \n x \n") == "x"
+    assert speakers.sanitize_utterance("already clean") == "already clean"
+
+
+def test_format_segment_keeps_one_utterance_one_line():
+    # Transcript line indices are citation keys — an utterance must never span lines.
+    assert format_segment("S1", "hello\nbrave\nworld") == "S1: hello brave world"
+    assert format_segment(None, "plain\ntext") == "plain text"

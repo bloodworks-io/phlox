@@ -5,41 +5,45 @@ export const getStatusInfo = (status, agentState) => {
         case "connecting":
             return {
                 label: t("agent.status.connecting"),
-                color: "overlay0",
+                color: "folio.muted",
                 pulse: true,
             };
         case "stopping":
             return {
                 label: t("agent.status.wrappingUp"),
-                color: "overlay0",
+                color: "folio.muted",
                 pulse: false,
             };
         case "live":
             return agentState === "working"
                 ? {
                       label: t("agent.status.updatingNote"),
-                      color: "secondaryButton",
+                      color: "folio.warning",
                       pulse: false,
                   }
                 : {
                       label: t("agent.status.microphoneActive"),
-                      color: "accent",
+                      color: "folio.info",
                       pulse: true,
                   };
         case "review":
             return {
                 label: t("agent.status.sessionEnded"),
-                color: "overlay0",
+                color: "folio.muted",
                 pulse: false,
             };
         case "error":
             return {
                 label: t("agent.status.connectionInterrupted"),
-                color: "dangerButton",
+                color: "folio.danger",
                 pulse: false,
             };
         default:
-            return { label: t("agent.status.idle"), color: "overlay0", pulse: false };
+            return {
+                label: t("agent.status.idle"),
+                color: "folio.muted",
+                pulse: false,
+            };
     }
 };
 

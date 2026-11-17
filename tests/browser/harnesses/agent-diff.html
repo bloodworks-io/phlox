@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Agent edit diff harness</title>
+    <style>
+      :root {
+        color-scheme: light dark;
+      }
+      body {
+        margin: 0;
+        min-height: 100vh;
+        display: grid;
+        place-items: center;
+        background: #f3f0e9;
+      }
+      @media (prefers-color-scheme: dark) {
+        body {
+          background: #262b25;
+        }
+      }
+      #root {
+        padding: 80px;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module">
+      import React from "react";
+      import { createRoot } from "react-dom/client";
+      import { Provider } from "/src/components/ui/provider.tsx";
+      import AgentEditDiffMarker from "/src/components/patient/AgentEditDiffMarker.tsx";
+      import "/src/i18n";
+
+      createRoot(document.getElementById("root")).render(
+        React.createElement(
+          Provider,
+          null,
+          React.createElement(AgentEditDiffMarker, {
+            fieldLabel: "Past Medical History",
+            before: "Shared line\nOld line",
+            after: "Shared line\nNew line",
+          }),
+        ),
+      );
+    </script>
+  </body>
+</html>

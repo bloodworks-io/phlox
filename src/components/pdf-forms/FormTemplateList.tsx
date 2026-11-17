@@ -3,7 +3,7 @@ import React from "react";
 import { Box, Text, VStack, IconButton, Spinner, HStack, Flex } from "@chakra-ui/react";
 import { toaster } from "@/components/ui/toaster";
 import { DeleteIcon, RepeatIcon } from "../common/icons";
-import { FiFileText } from "react-icons/fi";
+import { LuFileText } from "react-icons/lu";
 import { pdfFormsApi } from "../../utils/api/pdfFormsApi";
 import { useTranslation } from "react-i18next";
 import type { FormTemplate } from "./types";
@@ -59,7 +59,7 @@ const FormTemplateList = ({
   if (!templates.length) {
     return (
       <Box py="4" textAlign="center">
-        <Text color="overlay0" fontSize="sm">
+        <Text color="folio.muted" fontSize="sm">
           {t("forms.noTemplatesYet")}
         </Text>
       </Box>
@@ -82,15 +82,15 @@ const FormTemplateList = ({
             w="full"
             borderRadius="sm"
             cursor="pointer"
-            bg={isSelected ? "surfaceMuted" : undefined}
-            _hover={{ bg: "surfaceMuted" }}
+            bg={isSelected ? "folio.selection" : undefined}
+            _hover={{ bg: "folio.hover" }}
             transition="background-color 0.15s ease"
             aria-current={isSelected ? "true" : undefined}
             onClick={() => onSelect(tmpl.id)}
           >
             <HStack justify="space-between" gap="2">
               <HStack gap="2" css={{ minWidth: 0, flex: "1 1 0" }}>
-                <Box color="primaryButton" flexShrink={0} asChild><FiFileText /></Box>
+                <Box color="folio.info" flexShrink={0} asChild><LuFileText strokeWidth={1.6} /></Box>
                 <Box css={{ minWidth: 0, flex: "1 1 0", overflow: "hidden" }}>
                   <Text
                     fontSize="sm"
@@ -105,7 +105,7 @@ const FormTemplateList = ({
                   </Text>
                   <Text
                     fontSize="xs"
-                    color="overlay0"
+                    color="folio.muted"
                     css={{
                       whiteSpace: "nowrap",
                       overflow: "hidden",
@@ -131,7 +131,8 @@ const FormTemplateList = ({
                 <IconButton
                   variant="ghost"
                   size="sm"
-                  colorPalette="red"
+                  color="folio.danger"
+                  _hover={{ bg: "folio.dangerSoft" }}
                   aria-label={t("forms.deleteTemplate")}
                   onClick={(e) => handleDelete(e, tmpl.id, tmpl.name)}><DeleteIcon /></IconButton>
               </HStack>

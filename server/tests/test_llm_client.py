@@ -372,6 +372,62 @@ async def test_non_sdk_params_travel_via_extra_body_not_signature():
         assert call["extra_body"] == thinking_params
 
 
+@pytest.mark.asyncio
+async def test_tool_choice_option_maps_to_request():
+    fake = _StrictSDKClient()
+    tools = [{"type": "function", "function": {"name": "noop"}}]
+
+    await openai_compatible_chat(
+        fake,
+        model="qwen",
+        messages=[{"role": "user", "content": "hi"}],
+        options={"tool_choice": "none"},
+        tools=tools,
+    )
+    await openai_compatible_chat(
+        fake,
+        model="qwen",
+        messages=[{"role": "user", "content": "hi"}],
+        options={"force_tools": True},
+        tools=tools,
+    )
+    await openai_compatible_chat(
+        fake,
+        model="qwen",
+        messages=[{"role": "user", "content": "hi"}],
+        options={"temperature": 0.1},
+        tools=tools,
+    )
+
+    explicit, forced, default = fake.calls
+    assert explicit["tool_choice"] == "none"
+    assert forced["tool_choice"] == "required"
+    assert default["tool_choice"] is None
+
+
+@pytest.mark.asyncio
+async def test_structured_output_forwards_tools(monkeypatch):
+    captured = {}
+
+    async def fake_provider(_client, _model, _messages, _fmt, _options, tools, _stream, _tp):
+        captured["tools"] = tools
+        return {"message": {"role": "assistant", "content": "{}"}}
+
+    import server.llm_client.client as client_module
+
+    monkeypatch.setattr(client_module, "openai_compatible_chat", fake_provider)
+    llm = AsyncLLMClient(provider_type="openai", base_url="http://127.0.0.1:8123", api_key="k")
+    tools = [{"type": "function", "function": {"name": "noop"}}]
+    await llm.chat_with_structured_output(
+        model="qwen",
+        messages=[{"role": "user", "content": "hi"}],
+        schema={"type": "object"},
+        options={"tool_choice": "none"},
+        tools=tools,
+    )
+    assert captured["tools"] == tools
+
+
 # ------------------------------------------------------- client wiring
 
 

@@ -11,21 +11,15 @@ import {
     Portal,
 } from "@chakra-ui/react";
 import { toaster } from "@/components/ui/toaster";
-import { FaUserPlus, FaSearch, FaArrowLeft } from "react-icons/fa";
+import { LuArrowLeft, LuSearch, LuUserPlus } from "react-icons/lu";
 import { DEFAULT_TOAST_CONFIG } from "../../utils/constants";
 import { CandidateRow, PathHalf } from "../patient/NewNoteStartCard";
 import UrSearchField from "../patient/UrSearchField";
 import DemographicsForm from "../patient/DemographicsForm";
 
-const btnSx = {
-    fontFamily: '"Space Grotesk", sans-serif',
-    fontWeight: "600",
-};
-
 const NewNoteModal = ({
     isOpen,
     onClose,
-    _patient,
     setPatient,
     createNewPatient,
     findPatients,
@@ -143,10 +137,7 @@ const NewNoteModal = ({
                             <Heading
                                 as="h3"
                                 size="xl"
-                                color="textPrimary"
-                                css={{
-                                    fontFamily: '"Space Grotesk", sans-serif',
-                                }}
+                                color="folio.ink"
                             >
                                 {t("modal.newNote.title")}
                             </Heading>
@@ -159,7 +150,7 @@ const NewNoteModal = ({
                         >
                             <Text
                                 fontSize="sm"
-                                color="textSecondary"
+                                color="folio.muted"
                                 mb={4}
                                 lineHeight={1.5}
                             >
@@ -174,19 +165,15 @@ const NewNoteModal = ({
                                 {view === "choose" ? (
                                     <Flex gap={3} mb={2}>
                                         <PathHalf
-                                            icon={FaUserPlus}
+                                            icon={LuUserPlus}
                                             title={t("modal.newNote.newPatient")}
                                             subtitle={t("modal.newNote.createRecord")}
-                                            accent="primaryButton"
-                                            tileBg="tile"
                                             onClick={handleNewPatient}
                                         />
                                         <PathHalf
-                                            icon={FaSearch}
+                                            icon={LuSearch}
                                             title={t("modal.newNote.search")}
                                             subtitle={t("modal.newNote.existingPatient")}
-                                            accent="secondaryButton"
-                                            tileBg="tile"
                                             onClick={() => setView("search")}
                                         />
                                     </Flex>
@@ -208,15 +195,12 @@ const NewNoteModal = ({
                                         </Flex>
                                         <Button
                                             type="button"
-                                            variant="outline"
+                                            variant="folioSecondary"
                                             size="md"
                                             mt={3}
-                                            borderRadius="2xl"
-                                            className="switch-mode"
-                                            css={btnSx}
                                             onClick={() => setView("choose")}
                                         >
-                                            <FaArrowLeft />
+                                            <LuArrowLeft strokeWidth={1.6} />
                                             {t("action.back")}
                                         </Button>
                                     </Box>
@@ -244,15 +228,12 @@ const NewNoteModal = ({
                                         </VStack>
                                         <Button
                                             type="button"
-                                            variant="outline"
+                                            variant="folioSecondary"
                                             size="md"
                                             mt={3}
-                                            borderRadius="2xl"
-                                            className="switch-mode"
-                                            css={btnSx}
                                             onClick={() => setView("search")}
                                         >
-                                            <FaArrowLeft />
+                                            <LuArrowLeft strokeWidth={1.6} />
                                             {t("action.back")}
                                         </Button>
                                     </Box>
@@ -264,7 +245,7 @@ const NewNoteModal = ({
                                         onSaved={commitNewPatient}
                                         onCancel={() => setView("choose")}
                                         cancelLabel={t("action.back")}
-                                        cancelIcon={<FaArrowLeft />}
+                                        cancelIcon={<LuArrowLeft strokeWidth={1.6} />}
                                     />
                                 )}
                             </Box>

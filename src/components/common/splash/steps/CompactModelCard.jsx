@@ -10,10 +10,12 @@ import { Tooltip } from "@/components/ui/tooltip";
 import {
   DownloadIcon,
   CheckIcon,
+  WarningIcon,
 } from "../../icons";
-import { FaStar } from "react-icons/fa";
-import { GreenButton, NavButton } from "../../Buttons";
+import { LuStar } from "react-icons/lu";
+import { PrimaryButton, SuccessButton } from "../../Buttons";
 import { PerformancePopover } from "./PerformancePopover";
+import { isSmallModel } from "../../../../utils/performanceUtils";
 
 // Compact model card for carousel
 export const CompactModelCard = ({
@@ -28,43 +30,51 @@ export const CompactModelCard = ({
 }) => {
   const { t } = useTranslation();
   const isRecommended = model.recommendedType === "recommended";
+  const isSmall = isSmallModel(model);
 
   return (
     <Box
       p="3"
-      borderRadius="md"
+      borderRadius="folioPanel"
       borderWidth="1px"
       borderColor={
         isSelected
-          ? "primaryButton"
+          ? "folio.accent"
           : isRecommended
-            ? "purple.200"
-            : "surface"
+            ? "folio.info"
+            : "folio.line"
       }
-      bg={isSelected ? "primaryButtonFaint" : "base"}
+      bg={isSelected ? "folio.accentSoft" : "folio.paper"}
       position="relative"
       overflow="hidden"
       h="100%"
       minH="120px"
       cursor={isDownloaded ? "pointer" : "default"}
       onClick={isDownloaded ? onSelect : undefined}
-      transition="all 0.2s ease"
+      transition="background-color 160ms ease, border-color 160ms ease"
       _hover={
         isDownloaded
-          ? { borderColor: "primaryButton", shadow: "sm" }
-          : { borderColor: "surface1" }
+          ? { borderColor: "folio.accent" }
+          : { borderColor: "folio.muted" }
       }
       display="flex"
       flexDirection="column"
       justifyContent="space-between"
     >
-      {/* Header: star + name + info icon */}
+      {/* Header: star + name + warning/info icons */}
       <HStack w="full" justify="space-between">
         <HStack gap={1}>
           {model.recommendedType === "recommended" && (
-            <Tooltip content={t("splash.step.aiModels.recommendedTooltip")} showArrow>
-              <Box color="secondaryButton" display="flex" alignItems="center" cursor="default">
-                <FaStar size="12" />
+            <Tooltip
+              content={t(
+                isSmall
+                  ? "splash.step.aiModels.recommendedSmallTooltip"
+                  : "splash.step.aiModels.recommendedTooltip"
+              )}
+              showArrow
+            >
+              <Box color="folio.info" display="flex" alignItems="center" cursor="default">
+                <LuStar size="12" strokeWidth={1.6} />
               </Box>
             </Tooltip>
           )}
@@ -72,10 +82,19 @@ export const CompactModelCard = ({
             {model.simple_name || model.id}
           </Text>
         </HStack>
-        <PerformancePopover model={model} systemSpecs={systemSpecs} />
+        <HStack gap={1}>
+          {isSmall && (
+            <Tooltip content={t("splash.step.aiModels.smallModelWarning")} showArrow>
+              <Box color="folio.warning" display="flex" alignItems="center" cursor="default">
+                <WarningIcon boxSize={3.5} />
+              </Box>
+            </Tooltip>
+          )}
+          <PerformancePopover model={model} systemSpecs={systemSpecs} />
+        </HStack>
       </HStack>
 
-      <Text fontSize="xs" fontWeight="normal" className="pill-box-icons" noOfLines={2}>
+      <Text fontSize="xs" fontWeight="normal" color="folio.muted" className="settings-meta" noOfLines={2}>
         {model.description}
       </Text>
 
@@ -84,7 +103,7 @@ export const CompactModelCard = ({
         <Box mt={1}>
           <Progress.Root
             value={downloadProgress}
-            colorPalette="blue"
+            variant="folio"
             size="xs"
             striped
             animated
@@ -95,7 +114,8 @@ export const CompactModelCard = ({
           </Progress.Root>
           <Text
             fontSize="xs"
-            className="pill-box-icons"
+            color="folio.muted"
+            className="settings-meta"
             textAlign="right"
             mt={0.5}
           >
@@ -106,20 +126,20 @@ export const CompactModelCard = ({
 
       {/* Action button */}
       {!isDownloading && isDownloaded && isSelected && (
-        <GreenButton size="sm" w="full" disabled leftIcon={<CheckIcon />}>
+        <SuccessButton size="sm" w="full" disabled leftIcon={<CheckIcon />}>
           {t("splash.step.aiModels.selected")}
-        </GreenButton>
+        </SuccessButton>
       )}
       {!isDownloading && isDownloaded && !isSelected && (
-        <Button size="sm" w="full" variant="outline" onClick={onSelect}>
+        <Button size="sm" w="full" variant="folioSecondary" onClick={onSelect}>
           {t("splash.step.aiModels.select")}
         </Button>
       )}
       {!isDownloading && !isDownloaded && (
-        <NavButton size="sm" w="full" onClick={onDownload}>
+        <PrimaryButton size="sm" w="full" onClick={onDownload}>
           <DownloadIcon />
           {t("splash.step.aiModels.download")}
-        </NavButton>
+        </PrimaryButton>
       )}
     </Box>
   );

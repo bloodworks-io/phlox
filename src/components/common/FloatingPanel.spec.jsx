@@ -58,24 +58,48 @@ describe("FloatingPanel isthmus positioning", () => {
         expect(arrowVisibility()).toBe("visible");
     });
 
-    it("re-measures when entrance/close animations settle", () => {
+    it("does not depend on entrance animation completion for measurement", () => {
         openPanel();
         expect(arrow().style.top).toBe("125px");
 
         stubTriggerRect(200, 50);
-        expect(arrow().style.top).toBe("125px"); // no event yet
         fireEvent.animationEnd(panelBody());
+        expect(arrow().style.top).toBe("125px"); // animation is not a measurement signal
+        fireEvent.resize(window);
         expect(arrow().style.top).toBe("225px");
     });
 
-    it("re-measures on transform transitionend only", () => {
+    it("does not depend on transform transition completion for measurement", () => {
         openPanel();
 
         stubTriggerRect(300, 50);
-        fireEvent.transitionEnd(panelBody(), { propertyName: "opacity" });
-        expect(arrow().style.top).toBe("125px");
         fireEvent.transitionEnd(panelBody(), { propertyName: "transform" });
+        expect(arrow().style.top).toBe("125px");
+        fireEvent.resize(window);
         expect(arrow().style.top).toBe("325px");
+    });
+
+    it("re-measures when an observed layout box reports a resize", () => {
+        const callbacks = [];
+        const OriginalResizeObserver = window.ResizeObserver;
+        window.ResizeObserver = class {
+            constructor(callback) {
+                callbacks.push(callback);
+            }
+            observe() {}
+            unobserve() {}
+            disconnect() {}
+        };
+
+        try {
+            openPanel();
+            stubTriggerRect(500, 50);
+            expect(callbacks.length).toBeGreaterThan(0);
+            for (const callback of callbacks) callback([], {});
+            expect(arrow().style.top).toBe("525px");
+        } finally {
+            window.ResizeObserver = OriginalResizeObserver;
+        }
     });
 
     it("keeps the last position through the close fade (no 50% snap)", () => {

@@ -1,10 +1,9 @@
 import React, { useState, useRef, useEffect } from "react";
 import { useTranslation } from "react-i18next";
-import { colors } from "../../../theme/colors";
 import { IconButton, Box, Flex, Text, Spinner } from "@chakra-ui/react";
 import { toaster } from "@/components/ui/toaster";
 import { Tooltip } from '@/components/ui/tooltip';
-import { FaMicrophone, FaStop } from "react-icons/fa";
+import { LuMic, LuSquare } from "react-icons/lu";
 import { transcriptionApi } from "../../../utils/api/transcriptionApi";
 import { letterApi } from "../../../utils/api/letterApi";
 import { AudioRecorder } from "../../../utils/audioRecorder";
@@ -15,7 +14,6 @@ const WaveformVisualizer = React.memo(({ isRecording, isPaused, timer }) => {
   const [bars] = useState(() =>
     [...Array(barCount)].map(() => ({
       frequency: 1 + Math.random(),
-      delay: Math.random() * -2,
     })),
   );
 
@@ -36,11 +34,13 @@ const WaveformVisualizer = React.memo(({ isRecording, isPaused, timer }) => {
       left="50%"
       transform="translate(-50%, -50%)"
       zIndex="2"
-      bg="rgba(255, 255, 255, 0.9)"
-      borderRadius="md"
+      bg="folio.paper"
+      border="1px solid"
+      borderColor="folio.line"
+      borderRadius="folioControl"
       px={4}
       py={2}
-      boxShadow="md"
+      boxShadow="overlay"
       className="anim-fade"
     >
       {bars.map((bar, i) => (
@@ -50,36 +50,17 @@ const WaveformVisualizer = React.memo(({ isRecording, isPaused, timer }) => {
           w="3px"
           mx="1.5px"
           borderRadius="full"
-          bg={
-            colors.light.primaryButton
-          }
+          backgroundColor={isRecording ? "folio.danger" : "folio.warning"}
           opacity={isPaused ? "0.5" : "1"}
-          animation={
-            isRecording && !isPaused
-              ? `barAnimation ${bar.frequency}s infinite ease-in-out`
-              : "none"
-          }
-          css={{
-            '& @keyframes barAnimation': {
-              "0%, 100%": { height: "8px" },
-              "50%": { height: "24px" },
-            }
-          }}
-          style={{
-            animationDelay: `${bar.delay}s`,
-            height: isPaused ? "8px" : undefined,
-            transition: "all 0.3s ease-out",
-            animationPlayState: isPaused ? "paused" : "running",
-          }}
+          height={`${8 + Math.round((bar.frequency - 1) * 16)}px`}
         />
       ))}
       <Text
         ml={3}
         fontSize="md"
         fontWeight="bold"
-        color={
-          colors.light.primaryButton
-        }
+        fontFamily="body"
+        color={isRecording ? "folio.danger" : "folio.warning"}
       >
         {formattedTime}
       </Text>
@@ -236,31 +217,39 @@ const DictationWidget = ({
       >
         <IconButton
           onClick={isRecording ? stopRecording : startRecording}
-          disabled={isDisabled || isProcessing}
-          colorPalette={isRecording ? "red" : "gray"}
-          aria-label={t("scribe.mode.dictate")}
-          position="absolute"
-          bottom={4}
-          // Positioned to the left of the refinement button (which is at right: 4 = 16px)
-          right="60px"
-          width="40px"
-          height="40px"
-          borderRadius="full"
-          zIndex={2}
-          className="dictation-fab"
-          css={{
-            transition: "transform 0.2s",
+           disabled={isDisabled || isProcessing}
+           aria-label={t("scribe.mode.dictate")}
+           position="absolute"
+           bottom={4}
+           // Positioned to the left of the refinement button (which is at right: 4 = 16px)
+           right="60px"
+           width="40px"
+           height="40px"
+           borderRadius="full"
+           zIndex={2}
+           className="dictation-fab"
+           backgroundColor={isRecording ? "folio.danger" : "folio.accent"}
+           color={isRecording ? "folio.dangerInk" : "folio.accentInk"}
+           borderWidth="1px"
+           borderColor={isRecording ? "folio.danger" : "folio.accent"}
+           transition="color 160ms ease, background-color 160ms ease, border-color 160ms ease"
+           _hover={{
+             backgroundColor: isRecording
+               ? "folio.danger/90"
+               : "folio.accent/90",
+           }}
+           _focusVisible={{
+             outline: "2px solid",
+             outlineColor: "folio.focus",
+             outlineOffset: "2px",
+           }}
+         >{isProcessing ? (
+            <Spinner size="sm" color="folio.brandInk" />
 
-            "&:hover": !isDisabled &&
-              !isProcessing && {
-                transform: "scale(1.1)",
-              }
-          }}>{isProcessing ? (
-            <Spinner size="sm" />
           ) : isRecording ? (
-            <FaStop />
+            <LuSquare strokeWidth={1.6} />
           ) : (
-            <FaMicrophone />
+            <LuMic strokeWidth={1.6} />
           )}</IconButton>
       </Tooltip>
     </>

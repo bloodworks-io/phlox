@@ -2,7 +2,7 @@ import React from "react";
 import { useTranslation } from "react-i18next";
 import { Flex, Button, Spinner } from "@chakra-ui/react";
 import { RepeatIcon, CopyIcon, CheckIcon } from "../../common/icons";
-import { FaSave } from "react-icons/fa";
+import { LuSave } from "react-icons/lu";
 
 const PanelFooterActions = ({
     handleGenerateLetter,
@@ -33,7 +33,7 @@ const PanelFooterActions = ({
                 };
             default:
                 return {
-                    leftIcon: <FaSave />,
+                    leftIcon: <LuSave strokeWidth={1.6} />,
                     children: t("letter.save"),
                 };
         }
@@ -43,13 +43,13 @@ const PanelFooterActions = ({
         <Flex width="100%" justifyContent="space-between">
             <Button
                 onClick={() => handleGenerateLetter(additionalInstructions)}
-                className="red-button"
+                variant="folioSecondary"
                 disabled={letterLoading || saveState !== "idle"}><RepeatIcon />{t("letter.regenerate")}
                             </Button>
             <Flex>
                 <Button
                     onClick={handleCopy}
-                    className="grey-button"
+                    variant={recentlyCopied ? "folioSuccess" : "folioSecondary"}
                     mr="2"
                     disabled={letterLoading}>{
                         recentlyCopied ? (
@@ -63,7 +63,7 @@ const PanelFooterActions = ({
                     }{recentlyCopied ? t("letter.copied") : t("letter.copy")}</Button>
                 <Button
                     onClick={handleSave}
-                    className="green-button"
+                    variant={saveState === "saved" ? "folioSuccess" : "folioPrimary"}
                     disabled={letterLoading || saveState !== "idle"}
                     {...getSaveButtonProps()}
                 />

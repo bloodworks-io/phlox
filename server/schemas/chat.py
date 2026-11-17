@@ -1,4 +1,4 @@
-from typing import Any
+from typing import Any, Literal
 
 from pydantic import BaseModel
 
@@ -51,11 +51,14 @@ class ChatRequest(BaseModel):
         messages (List[dict]): A list of message dictionaries, each containing 'role' and 'content'.
         raw_transcription (Optional[str]): Raw transcription data, if available.
         patient_context (Optional[PatientContext]): Patient context for building system message.
+        mode (Literal['patient', 'rag']): Chat mode — 'patient' attaches patient context,
+            'rag' is a general knowledge-base chat without patient data.
     """
 
     messages: list[dict]
     raw_transcription: str | None = None
     patient_context: PatientContext | None = None
+    mode: Literal["patient", "rag"] = "patient"
 
 
 class ChatResponse(BaseModel):

@@ -14,7 +14,7 @@ import { useNavigate, useLocation } from "react-router";
 import PatientInfoBar from "../components/patient/PatientInfoBar";
 import NewNoteStartCard from "../components/patient/NewNoteStartCard";
 import { useScribe } from "../components/patient/Scribe";
-import SummaryBase from "../components/patient/Summary";
+import Summary from "../components/patient/Summary";
 import Chat from "../components/panels/chat/Chat";
 import LetterBase from "../components/panels/letter/Letter";
 import ReasoningPanelBase from "../components/panels/reasoning/ReasoningPanel";
@@ -44,6 +44,7 @@ import { areRequiredDemographicsMet } from "../utils/helpers/validationHelpers";
 import { useScribeMode } from "../utils/hooks/useScribeMode";
 import { usePatientSwitching } from "../utils/hooks/usePatientSwitching";
 import { useTranscriptionApply } from "../utils/hooks/useTranscriptionApply";
+import { useTranscription } from "../utils/hooks/useTranscription";
 import { useLiveAgentPanel } from "../utils/hooks/useLiveAgentPanel";
 import type {
     Patient,
@@ -51,7 +52,6 @@ import type {
 } from "../utils/patient/types";
 
 // loosen props until each is converted to .tsx
-const Summary = SummaryBase as unknown as ComponentType<any>;
 const Letter = LetterBase as unknown as ComponentType<any>;
 const ReasoningPanel = ReasoningPanelBase as unknown as ComponentType<any>;
 
@@ -83,6 +83,8 @@ const PatientDetails = ({
     };
     const summaryRef = useRef(null);
     const [, setLoading] = useState(false);
+
+    const [highlightLine, setHighlightLine] = useState<number | null>(null);
     const navigate = useNavigate();
     const [saveLoading, setSaveLoading] = useState(false);
     const {
@@ -199,6 +201,41 @@ const PatientDetails = ({
         summaryRef,
     });
 
+    // Note generation for filed-but-ungenerated imports: run the LLM pass
+    // with the currently selected template, then persist immediately.
+    const { reprocessTranscription } = useTranscription(
+        (data, isReprocess) => handleTranscriptionComplete(data, isReprocess),
+        setLoading,
+    );
+    const isUngeneratedNote =
+        Boolean(patient?.id) &&
+        Boolean(patient?.raw_transcription) &&
+        Object.keys(patient?.template_data ?? {}).length === 0;
+    const [generating, setGenerating] = useState(false);
+    const handleGenerateNote = async () => {
+        if (!patient?.raw_transcription) return;
+        setGenerating(true);
+        try {
+            await reprocessTranscription(
+                patient.raw_transcription,
+                {
+                    name: patient.name,
+                    gender: patient.gender,
+                    dob: patient.dob,
+                    templateKey: currentTemplate?.template_key,
+                    noteId: patient.id,
+                },
+                patient.transcription_duration,
+                true,
+            );
+            await handleSavePatientData();
+        } catch {
+            // toast already raised by the transcription hook
+        } finally {
+            setGenerating(false);
+        }
+    };
+
     // Scribe hook for recording controls
     const scribeControls = useScribe({
         name: patient?.name,
@@ -282,8 +319,8 @@ const PatientDetails = ({
         toaster.remove();
     }, []);
 
-    const handleSavePatientData = async (e: FormEvent) => {
-        e.preventDefault();
+    const handleSavePatientData = async (e?: FormEvent) => {
+        e?.preventDefault();
         setSaveLoading(true);
         try {
             if (location.pathname === "/new-note") {
@@ -434,11 +471,17 @@ const PatientDetails = ({
                     setIsModified={setIsSummaryModified}
                     selectTemplate={selectTemplate}
                     isNewPatient={isNewPatient}
+                    isUngeneratedNote={isUngeneratedNote}
+                    onGenerateNote={handleGenerateNote}
+                    generateLoading={generating}
                     isSearchedPatient={searchFlow.isSearchedPatient}
                     onCopy={handleCopy}
                     recentlyCopied={recentlyCopied}
                     isEncounterSaved={Boolean(patient?.id)}
                     liveUpdatedFields={liveAgent.fieldFlash}
+                    agentEdits={liveAgent.agentEdits}
+                    agentBaselines={liveAgent.agentBaselines}
+                    onCiteLine={setHighlightLine}
                 />
 
                 <WrapUpModal
@@ -509,7 +552,6 @@ const PatientDetails = ({
                 title={t("navigation.confirmTitle")}
                 body={t("navigation.leaveWarning")}
                 confirmLabel={t("navigation.leave")}
-                cancelLabel={undefined}
             />
             {/* Scribe Pill Box - centered at bottom */}
             <ScribePillBox
@@ -551,6 +593,8 @@ const PatientDetails = ({
                         dob={patient.dob}
                         templateKey={currentTemplate?.template_key}
                         noteId={patient?.id}
+                        highlightLine={highlightLine}
+                        onHighlightLineConsumed={() => setHighlightLine(null)}
                     />
                 }
                 onTranscriptOpenChange={handleTranscriptOpenChange}

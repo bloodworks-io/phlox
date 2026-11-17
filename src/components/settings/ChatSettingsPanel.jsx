@@ -13,19 +13,19 @@ const ChatSettingsPanel = ({ userSettings, setUserSettings }) => {
 
     return (
         <VStack gap={2} align="stretch">
-            <Text fontSize="xs" className="pill-box-icons">
+            <Text fontSize="xs" className="settings-meta">
                 {t("settings.chat.description")}
             </Text>
             <HStack gap={2}>
                 <Text
                     fontSize="xs"
-                    color="overlay0"
+                    color="folio.muted"
                     fontWeight="medium"
                     w="40%"
                 >
                     {t("settings.chat.buttonText")}
                 </Text>
-                <Text fontSize="xs" color="overlay0" fontWeight="medium" flex="1">
+                <Text fontSize="xs" color="folio.muted" fontWeight="medium" flex="1">
                     {t("settings.chat.prompt")}
                 </Text>
             </HStack>

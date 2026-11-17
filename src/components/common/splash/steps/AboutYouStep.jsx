@@ -45,9 +45,9 @@ export const AboutYouStep = ({
   <VStack key="about-you" className="anim-fade-slide-right" gap={4} w="100%">
     <Field.Root required>
       <HStack>
-        <Field.Label fontSize="sm" color="textSecondary">{t("splash.step.aboutYou.nameLabel")}</Field.Label>
+        <Field.Label fontSize="sm" color="folio.muted">{t("splash.step.aboutYou.nameLabel")}</Field.Label>
         <Tooltip content={t("splash.step.aboutYou.nameTooltip")} showArrow>
-          <InfoIcon boxSize={3} color="textSecondary" />
+          <InfoIcon boxSize={3} color="folio.muted" />
         </Tooltip>
       </HStack>
       <Input
@@ -61,9 +61,9 @@ export const AboutYouStep = ({
 
     <Field.Root required>
       <HStack>
-        <Field.Label fontSize="sm" color="textSecondary">{t("splash.step.aboutYou.specialtyLabel")}</Field.Label>
+        <Field.Label fontSize="sm" color="folio.muted">{t("splash.step.aboutYou.specialtyLabel")}</Field.Label>
         <Tooltip content={t("splash.step.aboutYou.specialtyTooltip")} showArrow>
-          <InfoIcon boxSize={3} color="textSecondary" />
+          <InfoIcon boxSize={3} color="folio.muted" />
         </Tooltip>
       </HStack>
       <NativeSelect.Root>
@@ -86,9 +86,9 @@ export const AboutYouStep = ({
 
     <Field.Root>
       <HStack>
-        <Field.Label fontSize="sm" color="textSecondary">{t("splash.step.aboutYou.languageLabel")}</Field.Label>
+        <Field.Label fontSize="sm" color="folio.muted">{t("splash.step.aboutYou.languageLabel")}</Field.Label>
         <Tooltip content={t("splash.step.aboutYou.languageTooltip")} showArrow>
-          <InfoIcon boxSize={3} color="textSecondary" />
+          <InfoIcon boxSize={3} color="folio.muted" />
         </Tooltip>
       </HStack>
       <NativeSelect.Root>
@@ -112,9 +112,9 @@ export const AboutYouStep = ({
     {letters && letters.availableLetterTemplates.length > 0 && (
       <Field.Root>
         <HStack>
-          <Field.Label fontSize="sm" color="textSecondary">{t("splash.step.aboutYou.letterTemplateLabel")}</Field.Label>
+          <Field.Label fontSize="sm" color="folio.muted">{t("splash.step.aboutYou.letterTemplateLabel")}</Field.Label>
           <Tooltip content={t("splash.step.aboutYou.letterTemplateTooltip")} showArrow>
-            <InfoIcon boxSize={3} color="textSecondary" />
+            <InfoIcon boxSize={3} color="folio.muted" />
           </Tooltip>
         </HStack>
         <NativeSelect.Root>

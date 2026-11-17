@@ -1,41 +1,36 @@
 // Defines visual styles for tab components within the application.
-import { colors } from "../colors";
 
-const tabStyles = (props) => ({
+const tabStyles = () => ({
     ".tab-style": {
         backgroundColor: "transparent !important",
         borderRadius: "0 !important",
-        borderTopLeftRadius: "md !important",
-        borderTopRightRadius: "md !important",
+        borderTopLeftRadius: "folioControl !important",
+        borderTopRightRadius: "folioControl !important",
         marginBottom: "-1px",
         fontSize: "16px !important",
         fontWeight: "400 !important",
         transition:
-            "background-color 0.15s ease, color 0.15s ease !important",
+            "background-color 160ms ease, color 160ms ease, border-color 160ms ease !important",
     },
+    // Accent ink keeps the active tab distinct even on the folio.canvas body
+    // it now merges with, where ink-on-canvas read as no state at all.
     ".tab-style[aria-selected='true']": {
-        backgroundColor:
-            props.colorMode === "light"
-                ? `${colors.light.base} !important`
-                : `${colors.dark.crust} !important`,
-        color:
-            props.colorMode === "light"
-                ? `${colors.light.textSecondary} !important`
-                : `${colors.dark.textSecondary} !important`,
+        backgroundColor: "folio.canvas !important",
+        color: "folio.accent !important",
         border: "none",
+        // Non-colour cue: the selected surface is the same colour as the
+        // content body it faces, so weight — not hue — carries the state.
+        fontWeight: "600 !important",
     },
     ".tab-style[aria-selected='false']": {
         backgroundColor: "transparent !important",
-        color:
-            props.colorMode === "light"
-                ? `${colors.light.textTertiary} !important`
-                : `${colors.dark.textTertiary} !important`,
+        color: "folio.muted !important",
     },
-    ".tab-style:hover": {
-        backgroundColor:
-            props.colorMode === "light"
-                ? `${colors.light.surface} !important`
-                : `${colors.dark.surface} !important`,
+    // Scoped to unselected tabs so re-hovering the active tab keeps its paper
+    // surface; ink text matches the app-wide hover idiom.
+    ".tab-style:not([aria-selected='true']):hover": {
+        backgroundColor: "folio.hover !important",
+        color: "folio.ink !important",
     },
     ".compact-tabs .tab-style": {
         fontSize: "13px !important",

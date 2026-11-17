@@ -85,6 +85,7 @@ class LiveAgentEngine:
         self._audio_lock = asyncio.Lock()  # serialises segment transcription
         self._tick_task: asyncio.Task | None = None
         self._tick_pending: str | None = None
+        self._tools_definition: list[dict[str, Any]] | None = None
 
     def _client(self):
         if self._llm_client is None:
@@ -170,7 +171,7 @@ class LiveAgentEngine:
                         ),
                     },
                 ],
-                tools=self._tools(),
+                tools=self.tools(),
                 max_tokens=1,
             )
         except Exception as exc:
@@ -362,10 +363,15 @@ class LiveAgentEngine:
             reason = self._tick_pending
             self._tick_pending = None
 
-    def _tools(self) -> list[dict[str, Any]]:
-        from server.chat.tools import get_tools_definition
+    def tools(self) -> list[dict[str, Any]]:
+        """Session tool definitions, computed once."""
+        if self._tools_definition is None:
+            from server.chat.tools import get_tools_definition
 
-        return get_live_tools_definition() + get_tools_definition([], exclude_chat_only=True)
+            self._tools_definition = get_live_tools_definition() + get_tools_definition(
+                [], exclude_chat_only=True
+            )
+        return self._tools_definition
 
     def _ensure_agent_messages(self) -> None:
         """Initialise the append-only conversation (stable system prefix)."""
@@ -403,7 +409,14 @@ class LiveAgentEngine:
     def _tick_user_message(self, reason: str) -> str:
         session = self.session
         new_segments = session.transcript_segments[session.segments_sent_to_agent :]
-        new_text = "\n".join(new_segments) or "(none)"
+
+        new_text = (
+            "\n".join(
+                f"[{session.segments_sent_to_agent + offset}] {segment}"
+                for offset, segment in enumerate(new_segments)
+            )
+            or "(none)"
+        )
 
         if reason == "tidy_tick":
             return build_tidy_tick_message(
@@ -458,8 +471,9 @@ class LiveAgentEngine:
         await session.emit({"type": "backlog", "count": 0})
 
         messages = session.agent_messages
-        tools = self._tools()
+        tools = self.tools()
         final_text = ""
+        note_changed = False
 
         for _ in range(_TICK_TOOL_ITERATIONS.get(reason, MAX_TOOL_ITERATIONS)):
             response = await self._chat(messages=messages, tools=tools)
@@ -487,6 +501,8 @@ class LiveAgentEngine:
                     result = await execute_live_tool(session, name, args)
                     for event in result["events"]:
                         await session.emit(event)
+                        if event.get("type") == "field_update":
+                            note_changed = True
                     tool_content = result["content"]
                 else:
                     tool_content, artifacts = await self._run_registry_tool(tool_call, name)
@@ -513,6 +529,11 @@ class LiveAgentEngine:
             )
             response = await self._chat(messages=messages)
             final_text = response.get("message", {}).get("content") or ""
+
+        if reason == "tidy_tick":
+            session.tidy_settled = not note_changed
+        elif note_changed:
+            session.tidy_settled = False
 
         if session.mode == "tidy" and reason == "tidy_command":
             await session.emit({"type": "command_result", "content": final_text.strip()[:400]})
@@ -557,8 +578,12 @@ class LiveAgentEngine:
         return content or f"Tool '{name}' returned no content.", artifacts
 
     def request_tidy(self) -> bool:
-        """Schedule a one-off note-consolidation tick (client timer)."""
-        if self.session.is_ended:
+        """Schedule a one-off note-consolidation tick (client timer).
+
+        Refused once a tidy tick changed nothing (the note is consolidated)
+        until the agent edits a note field again.
+        """
+        if self.session.is_ended or self.session.tidy_settled:
             return False
         self._schedule_tick("tidy_tick")
         return True

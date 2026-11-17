@@ -18,19 +18,19 @@ export const ReEmbedProgress = ({ progress }) => {
 
     return (
         <Box w="100%">
-            <Text fontSize="xs" color="textTertiary" mb={1}>
+            <Text fontSize="xs" color="folio.muted" mb={1}>
                 {t("common.reEmbed.collection", {
                     index: collection_index + 1,
                     total: total_collections,
                     name: collection_name ? `: ${collection_name}` : "",
                 })}
             </Text>
-            <Progress.Root value={percentage} colorPalette="blue" size="sm" striped animated>
+            <Progress.Root value={percentage} variant="folio" size="sm" striped animated>
                 <Progress.Track>
                     <Progress.Range />
                 </Progress.Track>
             </Progress.Root>
-            <Text fontSize="xs" color="overlay0" mt={1}>
+            <Text fontSize="xs" color="folio.faint" mt={1}>
                 {t("common.reEmbed.chunksEmbedded", {
                     embedded: chunks_embedded,
                     total: total_chunks_in_collection,

@@ -1,7 +1,7 @@
 import { Box, Text } from "@chakra-ui/react";
 import { Tooltip } from "@/components/ui/tooltip";
 import { useTranslation } from "react-i18next";
-import { FaThumbtack } from "react-icons/fa";
+import { LuPin } from "react-icons/lu";
 
 // Preview component that mimics Summary.jsx field rendering
 export const FieldPreview = ({ field }) => {
@@ -24,7 +24,7 @@ export const FieldPreview = ({ field }) => {
                         }}
                     >
                         <Box as="span" className="cohesive-persistent-marker">
-                            <FaThumbtack />
+                            <LuPin strokeWidth={1.6} />
                         </Box>
                     </Tooltip>
                 )}
@@ -36,11 +36,11 @@ export const FieldPreview = ({ field }) => {
                 borderRadius="sm"
                 whiteSpace="pre-wrap"
                 fontSize="sm"
-                color="textTertiary"
+                color="folio.ink"
             >
                 {content || (
                     <Text
-                        color="textSecondary"
+                        color="folio.faint"
                         asChild
                     ><i>
                             {field.persistent

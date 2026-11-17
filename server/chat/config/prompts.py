@@ -8,6 +8,7 @@ for chat interactions.
 import logging
 from datetime import datetime
 
+from server.database.config.defaults.prompts import DEFAULT_PROMPTS
 from server.database.config.manager import config_manager
 from server.utils.helpers import calculate_age
 
@@ -36,8 +37,19 @@ def _format_template_data(template_data: dict, fields: list) -> str:
     return "\n".join(lines)
 
 
+def _resolve_prompt(prompts: dict, category: str) -> str:
+    """Return the configured system prompt for ``category``, falling back to
+    the built-in default"""
+    configured = prompts.get("prompts", {}).get(category, {}).get("system")
+    if isinstance(configured, str) and configured:
+        return configured
+    return str(DEFAULT_PROMPTS["prompts"][category]["system"])
+
+
 def build_system_messages(
-    patient_context: dict | None = None, template_fields: list | None = None
+    patient_context: dict | None = None,
+    template_fields: list | None = None,
+    mode: str = "patient",
 ) -> list:
     """
     Build the system messages for chat interactions.
@@ -46,6 +58,8 @@ def build_system_messages(
         patient_context: Optional patient context containing name, dob, ur_number,
                         encounter_date, and template_data
         template_fields: Optional list of template field definitions for formatting
+        mode: Chat mode — 'patient' (default) uses the chat prompt with patient
+             context; 'rag' uses the knowledge-base chat prompt without patient data.
 
     Returns:
         list: A list containing a single system message with combined content.
@@ -58,8 +72,11 @@ def build_system_messages(
     doctor_name = user_settings.get("name", "")
     specialty = user_settings.get("specialty", "")
 
-    # Start with the main system prompt
-    content = prompts["prompts"]["chat"]["system"]
+    # Start with the system prompt for the chat mode
+    if mode == "rag":
+        content = _resolve_prompt(prompts, "rag")
+    else:
+        content = _resolve_prompt(prompts, "chat")
 
     content += (
         "\n\nCITATION RULE: When your answer uses information from a tool that "

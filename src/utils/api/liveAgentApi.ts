@@ -98,6 +98,23 @@ export const liveAgentApi = {
     },
 
     /**
+     * Await (or lazily start) the stop-time grounding turn. The server bounds
+     * its own wait at ~240s, so the client timeout sits above it.
+     */
+    getCitations: async (sessionId) => {
+        return handleApiRequest({
+            apiCall: async (signal) => {
+                const url = await buildApiUrl(
+                    `/api/agent-live/sessions/${sessionId}/citations`,
+                );
+                return universalFetch(url, { method: "GET", signal });
+            },
+            timeout: 300000,
+            errorMessage: t("api.liveAgent.citationsFailed"),
+        });
+    },
+
+    /**
      * Consume the SSE event stream for a live session.
      * Yields parsed event objects ({type: "transcript"|"field_update"|...}).
      */

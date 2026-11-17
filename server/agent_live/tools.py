@@ -523,6 +523,7 @@ async def execute_live_tool(session, name: str, args: dict[str, Any]) -> dict[st
             session.field_formats[key] = fmt
         content = _apply_seed_markers(content, _list_seed(session, key))
         session.field_drafts[key] = content.strip()
+        session.field_last_editor[key] = "agent"
         return {
             "content": f"Field '{key}' updated.",
             "events": [
@@ -541,6 +542,7 @@ async def execute_live_tool(session, name: str, args: dict[str, Any]) -> dict[st
         session.field_drafts[key] = (
             f"{existing}{_normalise_entry(existing, entry, _list_seed(session, key))}"
         )
+        session.field_last_editor[key] = "agent"
         return {
             "content": f"Appended to '{key}'.",
             "events": [
@@ -565,6 +567,7 @@ async def execute_live_tool(session, name: str, args: dict[str, Any]) -> dict[st
         if seed and _numbered(seed):
             new_content = _apply_seed_markers(new_content, seed)
         session.field_drafts[key] = new_content
+        session.field_last_editor[key] = "agent"
         return {
             "content": f"Removed mention of '{phrase}' from '{key}'.",
             "events": [{"type": "field_update", "field_key": key, "content": new_content}],

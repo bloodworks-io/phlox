@@ -72,6 +72,63 @@ class NarrativeResponse(BaseModel):
     )
 
 
+# Note Grounding
+class GroundedLine(BaseModel):
+    """One note line's grounding against the transcript, by line index only."""
+
+    line_index: int = Field(description="0-based index of the note line, in the order provided")
+    sources: list[int] = Field(
+        default_factory=list,
+        description="0-based transcript line indices that directly support this note line",
+    )
+    contradicts: list[int] = Field(
+        default_factory=list,
+        description="0-based transcript line indices that state the opposite of this note line",
+    )
+
+
+class GroundingResponse(BaseModel):
+    """
+    Structured model for post-hoc note grounding (indices only, no text echo).
+    """
+
+    lines: list[GroundedLine]
+
+
+class CompactGroundedLine(BaseModel):
+    """
+    Compact wire shape for one grounded note line: grouped per field, empty
+    contradicts omitted. Output tokens are the stop-turn bottleneck, so the
+    schema avoids repeating field keys per line.
+    """
+
+    line: int = Field(description="0-based index of the note line, in the order provided")
+    sources: list[int] = Field(
+        default_factory=list,
+        description="0-based transcript line indices that directly support this note line",
+    )
+    contradicts: list[int] = Field(
+        default=None,
+        description="0-based transcript line indices that state the opposite; omit when empty",
+    )
+
+
+class CompactGroundedField(BaseModel):
+    """Grounding entries for one note field, keyed once."""
+
+    field_key: str = Field(description="field_key of the note field these lines belong to")
+    lines: list[CompactGroundedLine] = Field(default_factory=list)
+
+
+class CompactGroundingFieldsResponse(BaseModel):
+    """
+    Combined multi-field grounding response, grouped by field (indices only,
+    no text echo).
+    """
+
+    fields: list[CompactGroundedField]
+
+
 # Patient Analysis
 class PreviousVisitSummary(BaseModel):
     """

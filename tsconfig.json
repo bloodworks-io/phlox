@@ -15,8 +15,9 @@
     "esModuleInterop": true,
     "isolatedModules": true,
     "skipLibCheck": true,
+    "types": ["node"],
     "forceConsistentCasingInFileNames": true,
     "strict": false
   },
-  "include": ["src"]
+  "include": ["src", "tests/browser", "playwright.config.ts"]
 }

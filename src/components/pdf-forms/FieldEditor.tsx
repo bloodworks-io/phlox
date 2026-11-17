@@ -15,15 +15,9 @@ import {
 } from "@chakra-ui/react";
 import { DeleteIcon } from "../common/icons";
 import { layoutTextField, getHelveticaMeasure, type Measure } from "../../utils/pdf/fieldLayout";
+import { FIELD_SEMANTIC_COLORS } from "./formBuilderUtils";
 import { useTranslation } from "react-i18next";
 import type { FieldType, FormField } from "./types";
-
-const FIELD_COLORS: Record<FieldType, string> = {
-  text: "blue.400",
-  checkbox: "green.400",
-  date: "orange.400",
-  number: "purple.400",
-};
 
 interface FieldEditorProps {
   field: FormField | null;
@@ -56,7 +50,7 @@ const FieldEditor = ({
   if (!field) {
     return (
       <Box py="4" textAlign="center">
-        <Text color="overlay0" fontSize="sm">
+        <Text color="folio.muted" fontSize="sm">
           {t("forms.selectFieldHint")}
         </Text>
       </Box>
@@ -91,7 +85,8 @@ const FieldEditor = ({
         <IconButton
           variant="ghost"
           size="sm"
-          colorPalette="red"
+          color="folio.danger"
+          _hover={{ bg: "folio.dangerSoft" }}
           aria-label={t("forms.deleteField")}
           onClick={() => onDelete(field.id)}><DeleteIcon /></IconButton>
       </HStack>
@@ -108,9 +103,21 @@ const FieldEditor = ({
         />
       </Field.Root>
       <Field.Root>
-        <Field.Label fontSize="xs" mb="1">
-          {t("forms.type")}
-        </Field.Label>
+        <HStack justify="space-between" mb="1">
+          <Field.Label fontSize="xs" mb="0">
+            {t("forms.type")}
+          </Field.Label>
+          <Box
+            w="7px"
+            h="7px"
+            borderRadius="full"
+            flexShrink={0}
+            bg={
+              FIELD_SEMANTIC_COLORS[field.field_type] ||
+              FIELD_SEMANTIC_COLORS.text
+            }
+          />
+        </HStack>
         <NativeSelect.Root>
           <NativeSelect.Field
             value={field.field_type}
@@ -188,12 +195,12 @@ const FieldEditor = ({
         </Field.Root>
       </HStack>
       {overflowWarning && (
-        <Text fontSize="xs" color="dangerButton">
+        <Text fontSize="xs" color="folio.danger">
           ⚠ {overflowWarning}
         </Text>
       )}
       {autoFitNote && (
-        <Text fontSize="xs" color="overlay0">
+        <Text fontSize="xs" color="folio.muted">
           {autoFitNote}
         </Text>
       )}
@@ -210,8 +217,8 @@ const FieldEditor = ({
         </Checkbox.Control>
         <Checkbox.Label>{t("forms.requiredField")}</Checkbox.Label>
       </Checkbox.Root>
-      <Box pt="2" borderTop="1px solid" borderColor="border">
-        <Text fontSize="xs" color="overlay0">
+      <Box pt="2" borderTop="1px solid" borderColor="folio.line">
+        <Text fontSize="xs" color="folio.muted">
           {t("forms.positionSize", {
             x: field.x.toFixed(1),
             y: field.y.toFixed(1),
@@ -225,4 +232,3 @@ const FieldEditor = ({
 };
 
 export default FieldEditor;
-export { FIELD_COLORS };

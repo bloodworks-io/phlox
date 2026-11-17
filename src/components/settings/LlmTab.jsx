@@ -18,7 +18,7 @@ import { CheckCircleIcon } from "../common/icons";
 import { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { chatApi } from "../../utils/api/chatApi";
-import { FiRefreshCw } from "react-icons/fi";
+import { LuRefreshCw } from "react-icons/lu";
 
 const LlmTab = ({
     config,
@@ -114,7 +114,7 @@ const LlmTab = ({
                 <Text fontSize="md" fontWeight="bold">
                     {t("settings.llm.title")}
                 </Text>
-                <Text fontSize="sm" color="overlay0">
+                <Text fontSize="sm" color="folio.muted">
                     {t("settings.llm.description")}
                 </Text>
             </Box>
@@ -131,7 +131,7 @@ const LlmTab = ({
                         endElement={
                             urlStatus.llm ? (
                                 <Tooltip content={t("settings.connectionSuccessful")}>
-                                    <CheckCircleIcon color="successButton" />
+                                    <CheckCircleIcon color="folio.success" />
                                 </Tooltip>
                             ) : undefined
                         }
@@ -177,7 +177,7 @@ const LlmTab = ({
                     {llmModelsLoading ? (
                         <HStack gap="2">
                             <Spinner size="sm" />
-                            <Text fontSize="sm" color="overlay0">
+                            <Text fontSize="sm" color="folio.muted">
                                 {t("settings.loadingModels")}
                             </Text>
                         </HStack>
@@ -215,7 +215,7 @@ const LlmTab = ({
                     {llmModelsLoading ? (
                         <HStack gap="2">
                             <Spinner size="sm" />
-                            <Text fontSize="sm" color="overlay0">
+                            <Text fontSize="sm" color="folio.muted">
                                 {t("settings.loadingModels")}
                             </Text>
                         </HStack>
@@ -272,7 +272,7 @@ const LlmTab = ({
                         </NativeSelect.Field>
                         <NativeSelect.Indicator />
                     </NativeSelect.Root>
-                    <Text fontSize="xs" color="overlay0" mt="1">
+                    <Text fontSize="xs" color="folio.muted" mt="1">
                         {t("settings.llm.processingModeHint")}
                     </Text>
                 </Box>
@@ -287,19 +287,26 @@ const LlmTab = ({
                     <HStack gap={3} mb={2}>
                         <Button
                             size="sm"
-                            variant="outline"
+                            variant="folioSecondary"
                             onClick={handleProbeVisionCapability}
                             loading={isProbingVision}
                         >
                             {t("settings.llm.testVision")}
                         </Button>
                         <Badge
-                            colorPalette={
+                            bg={
                                 currentVisionCapability?.vision_capable
-                                    ? "green"
+                                    ? "folio.successSoft"
                                     : currentVisionCapability
-                                      ? "red"
-                                      : "gray"
+                                      ? "folio.dangerSoft"
+                                      : "folio.paperAlt"
+                            }
+                            color={
+                                currentVisionCapability?.vision_capable
+                                    ? "folio.success"
+                                    : currentVisionCapability
+                                      ? "folio.danger"
+                                      : "folio.muted"
                             }
                         >
                             {currentVisionCapability
@@ -310,7 +317,7 @@ const LlmTab = ({
                         </Badge>
                     </HStack>
                     {currentVisionCapability ? (
-                        <Text fontSize="xs" color="overlay0" mb={2}>
+                        <Text fontSize="xs" color="folio.muted" mb={2}>
                             {t("settings.llm.source")}{" "}
                             {currentVisionCapability.source || "cache"}
                             {currentVisionCapability.probed_at
@@ -348,10 +355,10 @@ const LlmTab = ({
                                     size="sm"
                                     h="30px"
                                     minH="30px"
-                                    className="red-button"
+                                    variant="folioSecondary"
                                     onClick={onOptionsReset}
                                 >
-                                    <FiRefreshCw />
+                                    <LuRefreshCw strokeWidth={1.6} />
                                     {t("settings.resetToDefault")}
                                 </Button>
                             )}
@@ -370,7 +377,7 @@ const LlmTab = ({
                             >
                                 <NumberInput.Input className="input-style" />
                             </NumberInput.Root>
-                            <Text fontSize="xs" color="overlay0">
+                            <Text fontSize="xs" color="folio.muted">
                                 {t("settings.llm.temperatureHint")}
                             </Text>
                         </HStack>
