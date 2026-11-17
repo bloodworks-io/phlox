@@ -1,5 +1,56 @@
 # Changelog
 
+## [2.6.0](https://github.com/bloodworks-io/phlox/compare/v2.5.2...v2.6.0) (2026-11-17)
+
+
+### Features
+
+* **agent-live:** ground the note at stop via the warm conversation ([d0ffb78](https://github.com/bloodworks-io/phlox/commit/d0ffb7836a6d1e1a5b02791ad9921a77b31aa172))
+* **agent-live:** track last field editor and expose agent_edits events ([96ae62f](https://github.com/bloodworks-io/phlox/commit/96ae62f7df664910ea07a34ed4e160c6b6861ac4))
+* **companion:** in-process Rust sync host ([cef161d](https://github.com/bloodworks-io/phlox/commit/cef161d537c182c3671a0c78ce07d4fe97dacca2))
+* **companion:** mobile sync facade: patients, session filing, command ([0ec1d28](https://github.com/bloodworks-io/phlox/commit/0ec1d288ac50e772e8aa69397a8701330b7c86f7))
+* **db:** companion sync bookkeeping tables ([83e3333](https://github.com/bloodworks-io/phlox/commit/83e3333e1ff61c24c5f69765425fb7cdde6a66b0))
+* **demo:** dialogue transcripts and a citation showcase in the dev seed ([6d9a0f6](https://github.com/bloodworks-io/phlox/commit/6d9a0f6f9fdb6ef6bb185da90fcccc1d7ae59a81))
+* **notes:** generate filed imports with a chosen template ([317ebd4](https://github.com/bloodworks-io/phlox/commit/317ebd487d743b0c0ace9faa0392ff21322cb1e1))
+* **patient:** flag persistent fields the live agent edited ([583526d](https://github.com/bloodworks-io/phlox/commit/583526d646aa0118aa138e1d6c0e8c701111d4d6))
+* **patient:** show what the live agent changed in persistent fields ([9dc3c1d](https://github.com/bloodworks-io/phlox/commit/9dc3c1d3914ccf5046d47eaf5bd0e5145b1122e1))
+* **patient:** thread ambient citations into patient state ([c373e2f](https://github.com/bloodworks-io/phlox/commit/c373e2f120c4d5def4c15d8c7d05d2d8501cf2b3))
+* **patient:** transcript-grounded citation badges on note fields ([1b3f854](https://github.com/bloodworks-io/phlox/commit/1b3f8547c896d86a664156141d4c31dbeaf1a1bd))
+* **server:** persist note citations and expose /api/note/ground ([548feb6](https://github.com/bloodworks-io/phlox/commit/548feb6290f9f20572bf1d736f3b38bc801ff2a3))
+* **transcription:** ground ambient notes as refinement completes ([dc1756f](https://github.com/bloodworks-io/phlox/commit/dc1756f242950d2edabefc73722e7f2a3dd7ba89))
+* **transcription:** post-hoc transcript grounding service ([e853f84](https://github.com/bloodworks-io/phlox/commit/e853f84d592675533b0a84d4042e3153b258d439))
+* **ui:** apply shared controls and shell ([076ae27](https://github.com/bloodworks-io/phlox/commit/076ae275aa3ad63c4e1a2d709beb1878185490bb))
+* **ui:** click-to-sync import dialog ([04591d3](https://github.com/bloodworks-io/phlox/commit/04591d330e69446ceb563d251f4be1a007553b27))
+* **ui:** convert consultation capture and panels to new theme ([47d4258](https://github.com/bloodworks-io/phlox/commit/47d4258be6a6497493e17371f968bf9ae48a91e3))
+* **ui:** convert consultation core to new theme ([42841b4](https://github.com/bloodworks-io/phlox/commit/42841b40dc22fd3bab32e503ddb5ed5d5415dd01))
+* **ui:** convert secondary surfaces to new theme ([100de93](https://github.com/bloodworks-io/phlox/commit/100de9352def9e9daa04dc7647ba691ce6de7aae))
+* **ui:** convert secondary surfaces to new theme ([6a96667](https://github.com/bloodworks-io/phlox/commit/6a966678562abb18edd0c5b75438ec8c2a1b08e9))
+* **ui:** finish theme cleanup and unify desktop sidebar ([f22b511](https://github.com/bloodworks-io/phlox/commit/f22b51189d15786f9c08350a873b6b0028971332))
+* **ui:** mobile companion settings ([5a25ac8](https://github.com/bloodworks-io/phlox/commit/5a25ac87e0f42bba8df7a012b5aed796916b5919))
+* **ui:** new theme foundation ([1b27a29](https://github.com/bloodworks-io/phlox/commit/1b27a298c2cbc9fe02332f0439dcf00361b0d8fd))
+* **ui:** warn when local models fall below the 9B quality threshold ([3cbd220](https://github.com/bloodworks-io/phlox/commit/3cbd22013dd8e6da30eb200660c99d2842b3c083))
+
+
+### Bug Fixes
+
+* **agent-live:** keep the stop grounding turn cached and its citations ([d1d2e86](https://github.com/bloodworks-io/phlox/commit/d1d2e864a7f6dc8aac0359c9c5625827028c9e26))
+* **agent-live:** stop tidy ticks once a pass changes nothing ([16052c4](https://github.com/bloodworks-io/phlox/commit/16052c434626ec539a225bf95f58b8bda86de0ea))
+* **chat:** run all parallel tool calls and harden stream fallbacks ([1dbff6c](https://github.com/bloodworks-io/phlox/commit/1dbff6c85712ce17059cc440704a507b96260cb1))
+* **companion:** fail closed when held-import state is unreadable ([01581bb](https://github.com/bloodworks-io/phlox/commit/01581bbc3ce59ea78134e3d032aebc5d82a3f846))
+* **companion:** stop status poll and modal mount while UI is hidden ([9833b6b](https://github.com/bloodworks-io/phlox/commit/9833b6bd92cfaa5248b7c82e61b98fd4ea1a1489))
+* **jobs:** notes with no jobs are not outstanding ([a17fd6d](https://github.com/bloodworks-io/phlox/commit/a17fd6decc05820aa9931cb99cc23b63f484f89d))
+* **patient:** buffer reasoning sse and reject streams without a result ([42333f1](https://github.com/bloodworks-io/phlox/commit/42333f1bf4073e120aa3421829b8bf6858295417))
+* **patient:** clear live agent-edit markers on a new encounter ([03fd98c](https://github.com/bloodworks-io/phlox/commit/03fd98cfb0348aa9dba88a9d4ac0c5e7f721a782))
+* **reasoning:** honour configured prompt and emit error events for ([4140503](https://github.com/bloodworks-io/phlox/commit/41405039e01ded6482e71a286c494fc251b97631))
+* **tauri:** increase ctx-size of llama.cpp sidecar ([52f0c0c](https://github.com/bloodworks-io/phlox/commit/52f0c0c279af15a8332f7068ef5b19b760267bfe))
+* **theme:** give tab headers three distinct colour states ([2070ec3](https://github.com/bloodworks-io/phlox/commit/2070ec3088b688d3d2a52eaf545799d68ec68d4a))
+* **ui:** dark/light cycling from sidebar ([f920230](https://github.com/bloodworks-io/phlox/commit/f920230dbe315abb6a0036fcd29cf8b147c2e144))
+* **ui:** layout issues ([862eb3f](https://github.com/bloodworks-io/phlox/commit/862eb3fc90c270faabafdd07987271cb2a545733))
+* **ui:** letter panel header slider, flat editor, shared header height ([e78da9d](https://github.com/bloodworks-io/phlox/commit/e78da9d71f33be76a24e2be7df2e53a911131898))
+* **ui:** stop whole-window rubber-band scroll on macOS ([446ab00](https://github.com/bloodworks-io/phlox/commit/446ab009df974c8751a6b2ab33d452e590de1252))
+* **ui:** Todo cutoff and Mac traffic light position ([d90829c](https://github.com/bloodworks-io/phlox/commit/d90829c4ebc89bce2d7d106481b804a0404cd054))
+* **ui:** unify floating action menu panel headers on bold accent ([71b716c](https://github.com/bloodworks-io/phlox/commit/71b716c235422c107d4a05a885c680fecbac3d10))
+
 ## [2.5.2](https://github.com/bloodworks-io/phlox/compare/v2.5.1...v2.5.2) (2026-10-13)
 
 

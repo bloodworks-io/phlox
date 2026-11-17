@@ -6,7 +6,7 @@
     "frontendDist": "../build"
   },
   "productName": "Phlox",
-  "version": "2.5.2",
+  "version": "2.6.0",
   "identifier": "com.phlox.app",
   "app": {
     "windows": [
@@ -18,7 +18,10 @@
         "fullscreen": false,
         "visible": false,
         "titleBarStyle": "Overlay",
-        "trafficLightPosition": { "x": 10, "y": 20 },
+        "trafficLightPosition": {
+          "x": 10,
+          "y": 20
+        },
         "dragDropEnabled": false
       }
     ],
